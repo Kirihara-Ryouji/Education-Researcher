@@ -1,0 +1,105 @@
+---
+title: 模型服务商
+description: 在 Settings UI 或 CLI 初始化流程中配置模型服务商。
+---
+
+BrainPilot 支持多种模型服务商协议：
+
+- **Anthropic Messages**
+- **OpenAI Completions**
+- **OpenAI Responses**
+- **Azure OpenAI Responses**
+
+对新手来说，最稳妥的方式是使用 Web UI，因为它会自动写入配置文件。
+
+BrainPilot 不会根据模型名称自动切换到 Responses API。新增 Provider 时，界面默认选择
+`Anthropic Messages`；请根据服务商实际提供的接口明确选择协议。
+
+## 在界面中添加服务商
+
+1. 运行 `brainpilot up`。
+2. 打开终端打印的本地访问地址。
+3. 进入 **Settings -> Providers（服务商）**。
+4. 点击 **Add Provider（添加服务商）**。
+5. 填写名称、基础 URL、协议、API key 和模型 ID。
+6. 保存服务商。
+7. 点击 **Use（使用）**，把它设为当前默认服务商。
+
+一个网关配置示例：
+
+| 字段 | 值 |
+| --- | --- |
+| Provider name | `sqz` |
+| Base URL | `https://your-gateway.example.com` |
+| Protocol | `Anthropic Messages` |
+| API key | `<your-api-key>` |
+| Models | `glm-5.2` |
+
+真实 key 只应保存在你的本地配置里。不要把 provider key 提交到 GitHub issue、文档、截图或仓库文件中。
+
+## 上下文窗口
+
+Provider 设置提供**自动**、**256K** 和 **1M** 三种上下文选项。1M 模式会在约 900K 时自动
+整理上下文，并保留最近 64K token，让长时间的工具任务继续带着有用的近期信息。请只选择模型和
+服务商实际支持的大小：该设置控制 BrainPilot 的运行预算，不能提高模型原生的上下文上限。修改后
+请新建会话，因为 Provider 设置会在创建会话时冻结。
+
+## CLI 初始化
+
+快速生成本地配置：
+
+```bash
+brainpilot init --api-key <your-api-key>
+```
+
+接入自定义端点：
+
+```bash
+brainpilot init \
+  --api-key <your-api-key> \
+  --base-url https://api.openai.com/v1 \
+  --model <model-id> \
+  --api openai-responses
+```
+
+`--api` 可取 `anthropic-messages`、`openai-completions`、`openai-responses` 或
+`azure-openai-responses`。省略时保留向后兼容默认值 `anthropic-messages`。如果需要多个
+provider 或模型列表，仍然建议使用 UI 配置。
+
+## 配置文件在哪里
+
+Provider 设置保存在 BrainPilot 数据目录下，通常是：
+
+```text
+brainpilot/bp_template/providers.json
+```
+
+如果启动时使用了 `--dir` 或 `BP_DATA_DIR`，请到对应数据目录下查找。
+
+## 如何选择协议
+
+选择与你的模型网关匹配的协议：
+
+| 网关行为 | 协议 | Base URL 示例 | Model ID |
+| --- | --- | --- | --- |
+| Anthropic 兼容的 `/messages` API | `Anthropic Messages` | `https://api.anthropic.com` | 服务商模型 ID |
+| OpenAI 兼容的 chat/completions API | `OpenAI Completions` | `https://api.openai.com/v1` | 服务商模型 ID |
+| OpenAI Responses API | `OpenAI Responses` | `https://api.openai.com/v1` | 支持 Responses 的模型 ID |
+| Azure 托管的 Responses API | `Azure OpenAI Responses` | `https://<resource>.openai.azure.com` | Azure deployment 名称 |
+
+Azure 建议填写资源根地址；BrainPilot 会将 Azure OpenAI 资源地址归一化到
+`/openai/v1`。如果 Azure 中的 deployment 名称与基础模型名称不同，请在 Model ID 中填写
+deployment 名称。
+
+**Test** 会使用所选协议发起一次极小的真实模型请求，用于同时检查 URL、协议、模型和
+key。该请求可能产生少量模型用量。
+
+如果测试失败，先确认 base URL、协议、模型 ID 和 key 是否与服务商要求一致。
+
+## 新手检查清单
+
+- Base URL 不要随意带多余路径，除非网关明确要求。
+- OpenAI 官方接口通常填写包含 `/v1` 的 API 根地址；第三方兼容网关以其文档为准。
+- 模型 ID 必须与网关支持的 ID 完全一致。
+- 先保存，再点 **Use（使用）**。
+- 如果已有会话仍在使用旧配置，修改当前服务商后新建一个会话。

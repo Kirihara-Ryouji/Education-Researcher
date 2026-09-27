@@ -1,0 +1,210 @@
+import { describe, it, expect, vi } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { assertRepoCwd } from "./repo-mode.js";
+
+/** Build a fake "repo" with the expected packages/cli/dist/bin.js shape. */
+function makeFakeRepo(): { cwd: string; binPath: string } {
+  const cwd = realpathSync(mkdtempSync(join(tmpdir(), "bp-repo-")));
+  const distDir = join(cwd, "packages", "cli", "dist");
+  mkdirSync(distDir, { recursive: true });
+  const binPath = join(distDir, "bin.js");
+  writeFileSync(binPath, "// fake bin\n");
+  return { cwd, binPath };
+}
+
+function makeForeign(): string {
+  return realpathSync(mkdtempSync(join(tmpdir(), "bp-foreign-")));
+}
+
+// Argv-literal placeholders for `--dir`/`BP_DATA_DIR`. The tests never touch
+// these as real paths — `assertRepoCwd` only inspects their *presence* in
+// argv/env — but using the OS tmpdir keeps the values well-shaped on
+// Windows where `/tmp/...` is not a real path. (#9 — cross-platform pass.)
+const TMP_DIR = join(tmpdir(), "somewhere");
+const TMP_DIR_EQUALS = `--dir=${join(tmpdir(), "foo")}`;
+const TMP_DATA_DIR = join(tmpdir(), "dd");
+
+function callAssert(opts: Parameters<typeof assertRepoCwd>[0]): {
+  exited: number | null;
+  err: string;
+} {
+  let exited: number | null = null;
+  let err = "";
+  assertRepoCwd({
+    ...opts,
+    stderr: (m) => {
+      err += m;
+    },
+    exit: ((code: number) => {
+      exited = code;
+      throw new Error("__exit__");
+    }) as never,
+  });
+  return { exited, err };
+}
+
+describe("assertRepoCwd", () => {
+  it("passes when cwd contains the running bin.js at the expected path", () => {
+    const { cwd, binPath } = makeFakeRepo();
+    // Should NOT throw / NOT exit.
+    expect(() =>
+      assertRepoCwd({ argv: [], env: {}, cwd, binPath }),
+    ).not.toThrow();
+  });
+
+  it("rejects (exit 2) when cwd is unrelated to the running bin.js", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() => callAssert({ argv: [], env: {}, cwd, binPath })).toThrow(
+      "__exit__",
+    );
+    // Re-run to capture error/exit code without bouncing on throw.
+    let exited: number | null = null;
+    let err = "";
+    try {
+      assertRepoCwd({
+        argv: [],
+        env: {},
+        cwd,
+        binPath,
+        stderr: (m) => {
+          err += m;
+        },
+        exit: ((c: number) => {
+          exited = c;
+          throw new Error("__exit__");
+        }) as never,
+      });
+    } catch {
+      /* swallowed */
+    }
+    expect(exited).toBe(2);
+    expect(err).toContain("brainpilot 必须在仓库根目录运行");
+    expect(err).toContain("--dir");
+    expect(err).toContain("BP_ALLOW_FOREIGN_CWD");
+  });
+
+  it("skips check when --dir is given", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() =>
+      assertRepoCwd({
+        argv: ["up", "--dir", TMP_DIR],
+        env: {},
+        cwd,
+        binPath,
+      }),
+    ).not.toThrow();
+  });
+
+  it("skips check when -d is given", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() =>
+      assertRepoCwd({
+        argv: ["up", "-d", TMP_DIR],
+        env: {},
+        cwd,
+        binPath,
+      }),
+    ).not.toThrow();
+  });
+
+  it("skips check when --dir=<v> form is given", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() =>
+      assertRepoCwd({
+        argv: ["up", TMP_DIR_EQUALS],
+        env: {},
+        cwd,
+        binPath,
+      }),
+    ).not.toThrow();
+  });
+
+  it("skips check when BP_DATA_DIR is set", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() =>
+      assertRepoCwd({
+        argv: ["up"],
+        env: { BP_DATA_DIR: TMP_DATA_DIR },
+        cwd,
+        binPath,
+      }),
+    ).not.toThrow();
+  });
+
+  it("skips check when BP_ALLOW_FOREIGN_CWD=1 is set", () => {
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() =>
+      assertRepoCwd({
+        argv: ["up"],
+        env: { BP_ALLOW_FOREIGN_CWD: "1" },
+        cwd,
+        binPath,
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects when --dir flag is absent and env is empty even if cwd merely contains the repo path string", () => {
+    // Sanity: substring matches must not bypass the realpath compare.
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() => callAssert({ argv: [], env: {}, cwd, binPath })).toThrow(
+      "__exit__",
+    );
+  });
+
+  // Issue #169: an npm-installed CLI ships at
+  // `<prefix>/node_modules/@brainpilot/app/dist/bin.js` — no `packages/cli/`
+  // layer ever matches the cwd compare, so the guard must recognise the
+  // node_modules layout and let it through from ANY directory. These bin paths
+  // are strings only (the install case returns before any realpath compare), so
+  // they need not exist on disk.
+  it("passes for a global install (node_modules) regardless of cwd", () => {
+    const cwd = makeForeign();
+    const binPath = join(
+      "/usr",
+      "local",
+      "lib",
+      "node_modules",
+      "@brainpilot",
+      "app",
+      "dist",
+      "bin.js",
+    );
+    expect(() =>
+      assertRepoCwd({ argv: ["up"], env: {}, cwd, binPath }),
+    ).not.toThrow();
+  });
+
+  it("passes for a local install (project node_modules) regardless of cwd", () => {
+    const cwd = makeForeign();
+    const binPath = join(
+      makeForeign(),
+      "node_modules",
+      "@brainpilot",
+      "app",
+      "dist",
+      "bin.js",
+    );
+    expect(() =>
+      assertRepoCwd({ argv: ["up"], env: {}, cwd, binPath }),
+    ).not.toThrow();
+  });
+
+  it("still rejects a from-source run launched from the wrong cwd", () => {
+    // Regression guard: the node_modules bypass must NOT weaken the repo-root
+    // contract for a genuine source checkout (bin path has no node_modules).
+    const { binPath } = makeFakeRepo();
+    const cwd = makeForeign();
+    expect(() => callAssert({ argv: [], env: {}, cwd, binPath })).toThrow(
+      "__exit__",
+    );
+  });
+});

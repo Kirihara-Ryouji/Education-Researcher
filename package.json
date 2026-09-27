@@ -1,0 +1,59 @@
+{
+  "name": "brainpilot",
+  "version": "0.2.3",
+  "private": true,
+  "type": "module",
+  "description": "BrainPilot — multi-agent research collaboration platform (TS + Pi SDK)",
+  "license": "AGPL-3.0-only",
+  "workspaces": [
+    "packages/protocol",
+    "packages/plugin-sdk",
+    "packages/runtime",
+    "packages/backend-core",
+    "packages/cli",
+    "packages/client-cli",
+    "packages/web",
+    "packages/skills",
+    "packages/plugin-auditor",
+    "packages/plugin-got",
+    "packages/plugin-research",
+    "packages/plugin-monitor",
+    "packages/kb-scripts",
+    "packages/docs"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/patch-pi-ai.cjs",
+    "build": "npm run build --workspaces --if-present",
+    "docs:build": "npm run build -w @brainpilot/docs",
+    "docs:check": "npm run check:secrets -w @brainpilot/docs && npm run typecheck -w @brainpilot/docs",
+    "docs:dev": "npm run dev -w @brainpilot/docs --",
+    "typecheck": "tsc -b packages/plugin-sdk packages/protocol packages/skills packages/runtime packages/backend-core packages/cli packages/client-cli",
+    "test": "vitest run",
+    "test:datasets": "npm run build -w @brainpilot/backend-core && node scripts/test-public-dataset-downloads.mjs",
+    "test:watch": "vitest",
+    "test:claude-mem": "bash scripts/test-claude-mem-plugin.sh",
+    "check:claude-mem-upstream": "bash scripts/check-claude-mem-upstream.sh",
+    "check:superpowers-upstream": "bash scripts/check-superpowers-upstream.sh",
+    "check:playwright-mcp-upstream": "bash scripts/check-playwright-mcp-upstream.sh",
+    "test:superpowers": "vitest run packages/runtime/src/__tests__/pi-package-extension.test.ts packages/backend-core/test/plugins.test.ts packages/backend-core/test/external-plugins.test.ts",
+    "bp": "node packages/cli/dist/bin.js",
+    "version:sync": "node scripts/sync-versions.js",
+    "version:check": "node scripts/sync-versions.js --check",
+    "release:build": "npm run build",
+    "release:dry": "npm publish --workspaces --if-present --dry-run --access public",
+    "release": "npm run version:sync && npm run release:build && npm publish --workspace @brainpilot/plugin-sdk --workspace @brainpilot/skills --workspace @brainpilot/plugin-auditor --workspace @brainpilot/plugin-got --workspace @brainpilot/plugin-research --workspace @brainpilot/plugin-monitor --workspace @brainpilot/kb-scripts --workspace @brainpilot/protocol --workspace @brainpilot/runtime --workspace @brainpilot/backend-core --workspace @brainpilot/web --workspace @brainpilot/app --access public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "overrides": {
+    "@hono/node-server": "^2.1.0",
+    "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

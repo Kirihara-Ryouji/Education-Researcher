@@ -1,0 +1,43 @@
+{
+  "name": "@brainpilot/app",
+  "version": "0.2.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "BrainPilot CLI — Docker-free local one-click launch (bin: brainpilot / bnpt)",
+  "homepage": "https://github.com/NeuroAIHub/BrainPilot#readme",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "brainpilot": "dist/bin.js",
+    "bnpt": "dist/bin.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@brainpilot/backend-core": "^0.2.3",
+    "@brainpilot/plugin-sdk": "^0.2.3",
+    "@brainpilot/protocol": "^0.2.3",
+    "@brainpilot/runtime": "^0.2.3",
+    "@brainpilot/web": "^0.2.3",
+    "commander": "^12.1.0",
+    "picocolors": "^1.1.0"
+  }
+}

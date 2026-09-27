@@ -1,0 +1,159 @@
+---
+title: Getting Started
+description: Install BrainPilot, connect a model provider, run a first task, and verify the result.
+---
+
+BrainPilot is an open-source, human-in-the-loop research workspace for brain science. It runs on your computer or server, opens in a browser, and coordinates specialist agents, domain skills, model providers, files, and external tools.
+
+This guide takes you from a new installation to one small, reviewable task. Allow about five minutes if Node.js and a model-provider key are ready.
+
+> **Before you begin:** do not upload identifiable participant data, raw clinical records, passwords, API keys, or other confidential material. De-identify research data and follow your institution's ethics, consent, and data-management requirements.
+
+## 1. Check the requirements
+
+You need:
+
+- **Node.js 22 or later**
+- **npm**, included with Node.js
+- A model-provider API key, unless you start with the no-key mock mode
+
+Check the Node.js version:
+
+```bash
+node -v
+```
+
+If the result is below `v22`, install a newer Node.js release before continuing.
+
+## 2. Install and launch BrainPilot
+
+Install the published package globally and start it:
+
+```bash
+npm install -g @brainpilot/app@0.2.3
+brainpilot up
+```
+
+Open the local URL printed in the terminal. The process runs in the foreground; press `Ctrl-C` to stop it. `bnpt` is a short alias for the same command.
+
+To verify the installation before adding a real key, use mock mode:
+
+```bash
+BP_MOCK=1 brainpilot up
+```
+
+Mock mode is a product smoke test. It does not provide a real model for research tasks.
+
+## 3. Configure and test a model provider
+
+Open **Settings → Providers → Add Provider**, then enter values from your provider's official documentation.
+
+| Field | What to enter |
+| --- | --- |
+| Provider name | A local label that helps you recognize the connection |
+| Base URL | The provider's API root |
+| Protocol | The request format exposed by that endpoint |
+| API key | Your secret provider credential |
+| Models | The exact model or deployment IDs accepted by the provider |
+
+Select the protocol by endpoint behavior, not by the model name:
+
+| Endpoint behavior | BrainPilot protocol |
+| --- | --- |
+| Anthropic-compatible `/messages` | `Anthropic Messages` |
+| OpenAI-compatible chat/completions | `OpenAI Completions` |
+| OpenAI Responses API | `OpenAI Responses` |
+| Azure-hosted Responses API | `Azure OpenAI Responses` |
+
+After saving:
+
+1. Select **Use** to make the provider the default for new sessions.
+2. Select **Test** to send one minimal real request through the selected protocol and first configured model.
+3. Confirm that the provider reports a healthy result. The test may consume a small amount of provider quota.
+
+![Add and test a model provider in BrainPilot](/images/guide/provider-setup.gif)
+
+The animation uses an intentionally fake URL and key. Never copy secrets into prompts, screenshots, feedback messages, or repositories. See [Providers](https://brainpilot.chat/docs/providers) for CLI setup, protocol details, and configuration paths.
+
+## 4. Run a small first task
+
+Start with a low-cost request whose output is easy to review:
+
+1. Select **New chat**.
+2. Confirm the model shown beside the message box.
+3. State the goal, expected output, and any step that requires human approval.
+4. Send the request and keep the page open while the session starts.
+
+Try this example:
+
+> Create a short checklist for reviewing an fMRI analysis plan. State every assumption that requires human verification. Do not run an analysis or invent missing study details.
+
+![Create the first BrainPilot task](/images/guide/first-task.gif)
+
+For real work, a useful task normally contains five parts:
+
+1. **Goal** — the decision, analysis, or artifact you need.
+2. **Data and context** — format, scale, study background, and known limitations.
+3. **Method constraints** — required or prohibited methods, parameters, and validation rules.
+4. **Deliverables** — code, figures, tables, reports, logs, or machine-readable results.
+5. **Review gates** — choices the agent must explain or pause before executing.
+
+## 5. Review the work, not only the final answer
+
+BrainPilot makes the work inspectable, but it does not guarantee scientific correctness. Review these surfaces before relying on a result:
+
+- **Chat** — requests, clarifications, intermediate decisions, and the final response.
+- **Files** — uploaded inputs, generated code, figures, tables, reports, and logs.
+- **Agents** — which specialist roles participated and how their responsibilities differed.
+- **Trace** — important steps, tool calls, outputs, and artifacts.
+
+For a research task, verify at least:
+
+- the actual input files, shapes, units, exclusions, and missing values;
+- the code and saved artifact behind each important number;
+- the statistical assumptions and train/test separation;
+- citations against their original sources;
+- claims that still require human judgment or independent reproduction.
+
+The public [Demos](https://brainpilot.chat/demos) page contains completed runs you can inspect without uploading your own data.
+
+![Inspect a completed run and its Trace](/images/guide/inspect-trace.gif)
+
+## 6. Confirm the first run is healthy
+
+Your setup is ready for larger work when all of the following are true:
+
+- a provider is saved, active, and passes **Test**;
+- a new session shows the intended provider and model;
+- the task completes without a provider, authentication, or runtime error;
+- the session can be reopened from the conversation list;
+- its Trace and generated files are available for inspection.
+
+Only then move to larger files, longer tasks, or expensive models.
+
+## Common first-run problems
+
+| Symptom | First check |
+| --- | --- |
+| `brainpilot: command not found` | Confirm the global npm install and npm binary path |
+| Node.js version error | Install Node.js 22 or later |
+| Port already in use | Run `brainpilot up --port 9010` |
+| Provider returns 401/403 | Recheck the key and account/model permissions |
+| Provider returns 404 | Compare the Base URL, protocol, and Model ID with provider docs |
+| Provider returns 429/quota error | Wait, reduce usage, or add provider quota |
+| A changed provider does not affect the session | Create a new session after selecting **Use** |
+| MCP tools do not appear | Verify transport/auth, then create a new session |
+
+Read [Troubleshooting](https://brainpilot.chat/docs/troubleshooting) for commands and detailed diagnosis. When mock mode works but a real request fails, focus on the provider or external-tool configuration rather than reinstalling BrainPilot.
+
+## Bring your own research inputs
+
+For a local dataset, open [Research datasets](./datasets), download a small selection, and use **Use in new research** to prepare a draft. For papers, follow [Skills and Knowledge Base](./skills-knowledge-base) to upload PDFs and build a searchable index. [Research workspace](./research-workspace) explains persistent files and opening outputs from Trace.
+
+## Next steps
+
+- [Installation](https://brainpilot.chat/docs/installation) — updates, data directories, detached mode, and local isolation.
+- [Providers](https://brainpilot.chat/docs/providers) — protocol selection, CLI initialization, and provider configuration.
+- [MCP](https://brainpilot.chat/docs/mcp) — connect trusted stdio, HTTP, or SSE tools.
+- [Skills and Knowledge Base](https://brainpilot.chat/docs/skills-knowledge-base) — understand reusable guidance and research resources.
+- [Troubleshooting](https://brainpilot.chat/docs/troubleshooting) — resolve installation, startup, provider, and MCP problems.

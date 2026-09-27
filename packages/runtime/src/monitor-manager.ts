@@ -1,0 +1,388 @@
+import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { StringDecoder } from "node:string_decoder";
+import { rewriteBashWorkspacePaths } from "./managed-path-rewrite.js";
+
+export const MONITOR_DEFAULT_TIMEOUT_MS = 300_000;
+export const MONITOR_MAX_TIMEOUT_MS = 3_600_000;
+export const MONITOR_MAX_LINE_BYTES = 8 * 1024;
+export const MONITOR_MAX_STDERR_BYTES = 16 * 1024;
+export const MONITOR_BATCH_MS = 200;
+export const MONITOR_RATE_WINDOW_MS = 10_000;
+export const MONITOR_RATE_MAX_LINES = 50;
+
+export type MonitorStatus = "running" | "stopping" | "completed" | "failed" | "timed_out" | "flooded";
+
+export interface MonitorInfo {
+  id: string;
+  ownerAgent: string;
+  description: string;
+  command: string;
+  status: MonitorStatus;
+  persistent: boolean;
+  timeoutMs: number;
+  startedAt: string;
+  finishedAt?: string;
+  exitCode?: number | null;
+  signal?: NodeJS.Signals | null;
+  stderr?: string;
+}
+
+export interface MonitorEventBatch {
+  monitorId: string;
+  ownerAgent: string;
+  description: string;
+  timestamp: string;
+  lines: string[];
+}
+
+interface RunningMonitor {
+  info: MonitorInfo;
+  notifyOnExit: boolean;
+  child: ChildProcess;
+  decoder: StringDecoder;
+  stdoutBuffer: string;
+  stderrBuffer: string;
+  pendingLines: string[];
+  batchTimer?: NodeJS.Timeout;
+  timeoutTimer?: NodeJS.Timeout;
+  rateWindowStartedAt: number;
+  rateLines: number;
+  terminalPromise: Promise<void>;
+  resolveTerminal: () => void;
+}
+
+export interface MonitorManagerOptions {
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
+  onEvents: (batch: MonitorEventBatch) => boolean;
+  onState?: (info: MonitorInfo) => void;
+}
+
+function publicInfo(running: RunningMonitor): MonitorInfo {
+  return { ...running.info, ...(running.stderrBuffer ? { stderr: running.stderrBuffer } : {}) };
+}
+
+export function monitorEnvironment(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {};
+  const sensitive = /(api[_-]?key|token|secret|password|credential|authorization|cookie)/i;
+  for (const [key, value] of Object.entries(source)) {
+    if (!sensitive.test(key) && value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+export class MonitorManager {
+  private readonly monitors = new Map<string, RunningMonitor>();
+
+  constructor(private readonly opts: MonitorManagerOptions) {}
+
+  start(input: {
+    ownerAgent: string;
+    description: string;
+    command: string;
+    timeoutMs?: number;
+    persistent?: boolean;
+    notifyOnExit?: boolean;
+  }): MonitorInfo {
+    const description = input.description.trim();
+    const displayCommand = input.command.trim();
+    if (!description) throw new Error("description is required");
+    if (!displayCommand) throw new Error("command is required");
+    // Match Pi's managed bash contract: /workspace is a stable product path,
+    // while the child process must execute against this session's real cwd.
+    // Keep the logical command in public state/tool results so host paths never
+    // leak into model context or the UI.
+    const command = rewriteBashWorkspacePaths(displayCommand, this.opts.cwd).command;
+    const persistent = input.persistent === true;
+    const requested = input.timeoutMs ?? MONITOR_DEFAULT_TIMEOUT_MS;
+    if (!Number.isFinite(requested) || requested <= 0 || requested > MONITOR_MAX_TIMEOUT_MS) {
+      throw new Error(`timeout_ms must be between 1 and ${MONITOR_MAX_TIMEOUT_MS}`);
+    }
+    const timeoutMs = persistent ? 0 : Math.floor(requested);
+    const child = spawn(command, {
+      cwd: this.opts.cwd,
+      env: monitorEnvironment(this.opts.env),
+      shell: true,
+      detached: process.platform !== "win32",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const id = `mon_${randomUUID()}`;
+    let resolveTerminal!: () => void;
+    const terminalPromise = new Promise<void>((resolve) => { resolveTerminal = resolve; });
+    const running: RunningMonitor = {
+      info: {
+        id,
+        ownerAgent: input.ownerAgent,
+        description,
+        command: displayCommand,
+        status: "running",
+        persistent,
+        timeoutMs,
+        startedAt: new Date().toISOString(),
+      },
+      notifyOnExit: input.notifyOnExit === true,
+      child,
+      decoder: new StringDecoder("utf8"),
+      stdoutBuffer: "",
+      stderrBuffer: "",
+      pendingLines: [],
+      rateWindowStartedAt: Date.now(),
+      rateLines: 0,
+      terminalPromise,
+      resolveTerminal,
+    };
+    this.monitors.set(id, running);
+    child.stdout?.on("data", (chunk: Buffer) => this.consumeStdout(running, chunk));
+    child.stderr?.on("data", (chunk: Buffer) => this.consumeStderr(running, chunk));
+    child.once("error", (error) => this.finish(running, "failed", null, null, error.message));
+    child.once("exit", (code, signal) => {
+      const tail = running.decoder.end();
+      if (tail) this.consumeText(running, tail);
+      if (running.stdoutBuffer) this.acceptLine(running, running.stdoutBuffer);
+      this.flush(running);
+      if (running.info.status === "running" || running.info.status === "stopping") {
+        this.finish(running, code === 0 ? "completed" : "failed", code, signal);
+      } else {
+        this.finish(running, running.info.status, code, signal);
+      }
+    });
+    if (!persistent) {
+      running.timeoutTimer = setTimeout(() => {
+        if (running.info.status !== "running") return;
+        running.info.status = "timed_out";
+        this.opts.onState?.(publicInfo(running));
+        this.killProcess(running, "SIGTERM");
+        void this.waitThenKill(running);
+      }, timeoutMs);
+      running.timeoutTimer.unref?.();
+    }
+    this.opts.onState?.(publicInfo(running));
+    return publicInfo(running);
+  }
+
+  list(ownerAgent?: string): MonitorInfo[] {
+    return [...this.monitors.values()]
+      .filter((monitor) => !ownerAgent || monitor.info.ownerAgent === ownerAgent)
+      .map(publicInfo);
+  }
+
+  hasRunning(ownerAgent?: string): boolean {
+    return [...this.monitors.values()].some((monitor) =>
+      (!ownerAgent || monitor.info.ownerAgent === ownerAgent)
+      && (monitor.info.status === "running" || monitor.info.status === "stopping"),
+    );
+  }
+
+  async stop(id: string, ownerAgent?: string): Promise<boolean> {
+    const running = this.monitors.get(id);
+    if (!running || (ownerAgent && running.info.ownerAgent !== ownerAgent)) return false;
+    if (running.info.status !== "running") return false;
+    running.info.status = "stopping";
+    this.opts.onState?.(publicInfo(running));
+    this.killProcess(running, "SIGTERM");
+    await this.waitThenKill(running);
+    return true;
+  }
+
+  async stopOwner(ownerAgent: string): Promise<number> {
+    const ids = this.list(ownerAgent)
+      .filter((info) => info.status === "running")
+      .map((info) => info.id);
+    await Promise.all(ids.map((id) => this.stop(id, ownerAgent)));
+    return ids.length;
+  }
+
+  async stopAll(): Promise<number> {
+    const ids = this.list().filter((info) => info.status === "running").map((info) => info.id);
+    await Promise.all(ids.map((id) => this.stop(id)));
+    return ids.length;
+  }
+
+  stopAllImmediate(): void {
+    for (const running of this.monitors.values()) {
+      if (running.info.status !== "running" && running.info.status !== "stopping") continue;
+      running.info.status = "stopping";
+      this.killProcess(running, "SIGKILL");
+    }
+  }
+
+  private consumeStdout(running: RunningMonitor, chunk: Buffer): void {
+    this.consumeText(running, running.decoder.write(chunk));
+  }
+
+  private consumeText(running: RunningMonitor, text: string): void {
+    if (running.info.status !== "running") return;
+    running.stdoutBuffer += text;
+    if (Buffer.byteLength(running.stdoutBuffer) > MONITOR_MAX_LINE_BYTES && !running.stdoutBuffer.includes("\n")) {
+      this.flood(running, `stdout line exceeded ${MONITOR_MAX_LINE_BYTES} bytes`);
+      return;
+    }
+    const lines = running.stdoutBuffer.split(/\r?\n/);
+    running.stdoutBuffer = lines.pop() ?? "";
+    for (const line of lines) this.acceptLine(running, line);
+  }
+
+  private acceptLine(running: RunningMonitor, line: string): void {
+    if (running.info.status !== "running") return;
+    if (Buffer.byteLength(line) > MONITOR_MAX_LINE_BYTES) {
+      this.flood(running, `stdout line exceeded ${MONITOR_MAX_LINE_BYTES} bytes`);
+      return;
+    }
+    const now = Date.now();
+    if (now - running.rateWindowStartedAt >= MONITOR_RATE_WINDOW_MS) {
+      running.rateWindowStartedAt = now;
+      running.rateLines = 0;
+    }
+    running.rateLines++;
+    if (running.rateLines > MONITOR_RATE_MAX_LINES) {
+      this.flood(running, "stdout event rate exceeded the monitor limit");
+      return;
+    }
+    running.pendingLines.push(line);
+    if (!running.batchTimer) {
+      running.batchTimer = setTimeout(() => this.flush(running), MONITOR_BATCH_MS);
+      running.batchTimer.unref?.();
+    }
+  }
+
+  private flush(running: RunningMonitor): void {
+    if (running.batchTimer) clearTimeout(running.batchTimer);
+    running.batchTimer = undefined;
+    if (running.pendingLines.length === 0) return;
+    const lines = running.pendingLines.splice(0);
+    const accepted = this.opts.onEvents({
+      monitorId: running.info.id,
+      ownerAgent: running.info.ownerAgent,
+      description: running.info.description,
+      timestamp: new Date().toISOString(),
+      lines,
+    });
+    if (!accepted) this.flood(running, "monitor event queue is full");
+  }
+
+  private consumeStderr(running: RunningMonitor, chunk: Buffer): void {
+    running.stderrBuffer = `${running.stderrBuffer}${chunk.toString("utf8")}`.slice(-MONITOR_MAX_STDERR_BYTES);
+  }
+
+  private flood(running: RunningMonitor, message: string): void {
+    if (running.info.status !== "running") return;
+    running.stderrBuffer = `${running.stderrBuffer}${running.stderrBuffer ? "\n" : ""}${message}`.slice(-MONITOR_MAX_STDERR_BYTES);
+    running.info.status = "flooded";
+    this.opts.onState?.(publicInfo(running));
+    this.killProcess(running, "SIGTERM");
+    void this.waitThenKill(running);
+  }
+
+  private finish(
+    running: RunningMonitor,
+    status: MonitorStatus,
+    exitCode: number | null,
+    signal: NodeJS.Signals | null,
+    stderr?: string,
+  ): void {
+    if (running.info.finishedAt) return;
+    if (running.timeoutTimer) clearTimeout(running.timeoutTimer);
+    if (running.batchTimer) clearTimeout(running.batchTimer);
+    if (stderr) this.consumeStderr(running, Buffer.from(stderr));
+    running.info = {
+      ...running.info,
+      status,
+      finishedAt: new Date().toISOString(),
+      exitCode,
+      signal,
+    };
+    this.opts.onState?.(publicInfo(running));
+    if (running.notifyOnExit) {
+      this.opts.onEvents({
+        monitorId: running.info.id,
+        ownerAgent: running.info.ownerAgent,
+        description: running.info.description,
+        timestamp: new Date().toISOString(),
+        lines: this.terminalEventLines(running),
+      });
+    }
+    running.resolveTerminal();
+  }
+
+  private terminalEventLines(running: RunningMonitor): string[] {
+    const status = running.info.status;
+    const lines = [status === "completed"
+      ? "Background job completed successfully."
+      : `Background job ended with status: ${status}.`];
+    if (running.info.exitCode !== null && running.info.exitCode !== undefined) {
+      lines.push(`Exit code: ${running.info.exitCode}.`);
+    }
+    if (running.info.signal) lines.push(`Signal: ${running.info.signal}.`);
+    const stderr = running.stderrBuffer.trim();
+    if (stderr) {
+      const summary = stderr
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(-3)
+        .join(" | ")
+        .replaceAll(this.opts.cwd, "/workspace")
+        .replace(/((?:api[_-]?key|token|secret|password|credential|authorization|cookie)\s*[:=]\s*)\S+/gi, "$1[redacted]")
+        .slice(0, 1_000);
+      if (summary) lines.push(`Stderr summary: ${summary}`);
+    }
+    return lines;
+  }
+
+  private killProcess(running: RunningMonitor, signal: NodeJS.Signals): void {
+    try {
+      if (process.platform === "win32" && running.child.pid) {
+        // `shell: true` creates cmd.exe -> command.exe on Windows. Killing only
+        // cmd.exe leaves the monitored command alive (and its stdio open).
+        // Windows has no POSIX process-group signals; taskkill /T is the native
+        // way to terminate the whole command tree.
+        const killer = spawn("taskkill", ["/PID", String(running.child.pid), "/T", "/F"], {
+          stdio: "ignore",
+          windowsHide: true,
+        });
+        const fallback = () => {
+          try { running.child.kill(signal); } catch { /* already exited */ }
+        };
+        killer.once("error", fallback);
+        killer.once("close", (code) => { if (code !== 0) fallback(); });
+      } else if (running.child.pid) {
+        process.kill(-running.child.pid, signal);
+      } else {
+        running.child.kill(signal);
+      }
+    } catch {
+      /* process already exited */
+    }
+  }
+
+  private processTreeAlive(running: RunningMonitor): boolean {
+    if (process.platform === "win32" || !running.child.pid) {
+      return running.child.exitCode === null && running.child.signalCode === null;
+    }
+    try {
+      process.kill(-running.child.pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async waitThenKill(running: RunningMonitor): Promise<void> {
+    const gracePeriod = new Promise<void>((resolve) => setTimeout(resolve, 1_000));
+    const settled = await Promise.race([
+      running.terminalPromise.then(() => true),
+      gracePeriod.then(() => false),
+    ]);
+    // With `shell: true`, the shell can exit on SIGTERM while a descendant in
+    // the detached process group keeps running. The direct-child promise alone
+    // therefore does not prove that the monitored process tree is gone.
+    if (settled && !this.processTreeAlive(running)) return;
+    await gracePeriod;
+    this.killProcess(running, "SIGKILL");
+    await Promise.race([
+      running.terminalPromise,
+      new Promise<void>((resolve) => setTimeout(resolve, 250)),
+    ]);
+  }
+}

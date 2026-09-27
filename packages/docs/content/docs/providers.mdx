@@ -1,0 +1,107 @@
+---
+title: Providers
+description: Configure model providers from the Settings UI or CLI initialization.
+---
+
+BrainPilot can talk to multiple model provider protocols:
+
+- **Anthropic Messages**
+- **OpenAI Completions**
+- **OpenAI Responses**
+- **Azure OpenAI Responses**
+
+The safest beginner path is the web UI because it writes the configuration file for you.
+
+BrainPilot does not infer the Responses API from a model name. The new-provider form defaults
+to `Anthropic Messages`; explicitly select the protocol exposed by your provider.
+
+## Add a Provider in the UI
+
+1. Start BrainPilot with `brainpilot up`.
+2. Open the printed local URL.
+3. Go to **Settings -> Providers**.
+4. Click **Add Provider**.
+5. Fill in name, base URL, protocol, API key, and model IDs.
+6. Save the provider.
+7. Click **Use** on the provider you want as the active default.
+
+Example gateway setup:
+
+| Field | Value |
+| --- | --- |
+| Provider name | `sqz` |
+| Base URL | `https://your-gateway.example.com` |
+| Protocol | `Anthropic Messages` |
+| API key | `<your-api-key>` |
+| Models | `glm-5.2` |
+
+Keep real keys in your local config only. Do not commit provider keys to GitHub issues, docs, screenshots, or repository files.
+
+## Context Window
+
+Provider settings offer **Auto**, **256K**, and **1M** context. In 1M mode, BrainPilot compacts
+near 900K and preserves the latest 64K tokens so long-running tool work keeps useful recent
+context. Choose only a size supported by the model and provider: this setting controls BrainPilot's
+runtime budget, but cannot increase the model's native context limit. Start a new session after
+changing it because provider settings are frozen when a session is created.
+
+## CLI Initialization
+
+For quick local scaffolding:
+
+```bash
+brainpilot init --api-key <your-api-key>
+```
+
+For a custom endpoint:
+
+```bash
+brainpilot init \
+  --api-key <your-api-key> \
+  --base-url https://api.openai.com/v1 \
+  --model <model-id> \
+  --api openai-responses
+```
+
+`--api` accepts `anthropic-messages`, `openai-completions`, `openai-responses`, or
+`azure-openai-responses`. Omitting it retains the backward-compatible
+`anthropic-messages` default. The UI remains the recommended path for multiple providers and
+model lists.
+
+## Where Provider Config Lives
+
+Provider settings are stored in the BrainPilot data directory, usually:
+
+```text
+brainpilot/bp_template/providers.json
+```
+
+If you launch with `--dir` or `BP_DATA_DIR`, look under that data directory instead.
+
+## Choosing a Protocol
+
+Use the protocol that matches your model gateway:
+
+| Gateway behavior | Protocol | Example base URL | Model ID |
+| --- | --- | --- | --- |
+| Anthropic-compatible `/messages` API | `Anthropic Messages` | `https://api.anthropic.com` | Provider model ID |
+| OpenAI-compatible chat/completions API | `OpenAI Completions` | `https://api.openai.com/v1` | Provider model ID |
+| OpenAI Responses API | `OpenAI Responses` | `https://api.openai.com/v1` | Responses-capable model ID |
+| Azure-hosted Responses API | `Azure OpenAI Responses` | `https://<resource>.openai.azure.com` | Azure deployment name |
+
+For Azure, prefer the resource root URL; BrainPilot normalizes Azure OpenAI resource URLs to
+`/openai/v1`. If the Azure deployment name differs from the base model name, enter the
+deployment name as the Model ID.
+
+**Test** sends one minimal real model request through the selected protocol so it can validate
+the URL, protocol, model, and key together. This may incur a small amount of model usage.
+
+If provider testing fails, confirm the base URL, protocol, model ID, and key with your provider.
+
+## Beginner Checklist
+
+- The base URL should not include random trailing path segments unless your gateway requires them.
+- Official OpenAI endpoints normally use an API root ending in `/v1`; follow the gateway's own documentation for compatible third-party services.
+- The model ID must match exactly what the gateway expects.
+- Save first, then click **Use**.
+- Start a new session after changing the active provider if an existing session still uses the old setting.

@@ -1,0 +1,295 @@
+/**
+ * AG-UI event constructors. Every outgoing event is built here so the wire
+ * shape (snake_case fields, UPPERCASE/snake_case `type`) matches
+ * `@brainpilot/protocol` exactly. We validate via `parseEvent` in tests.
+ *
+ * The protocol event envelope carries `session_id`, optional `run_id`,
+ * `thread_id`, `agent_name`, `_event_id`, and `_ts`. We always inject
+ * `session_id`, a unique `_event_id`, and `_ts`; agent/run fields when known.
+ */
+import { randomUUID } from "node:crypto";
+import type {
+  AgUiEvent,
+  CompactionEndValue,
+  CompactionReason,
+  CompactionStartValue,
+  UserInputCancellationReason,
+  WorkspaceRestoreEventMetadata,
+} from "@brainpilot/protocol";
+import { CUSTOM_EVENT } from "@brainpilot/protocol";
+
+function ts(): string {
+  return new Date().toISOString();
+}
+
+interface Ctx {
+  sessionId: string;
+  agentName?: string;
+  runId?: string;
+  threadId?: string;
+}
+
+function envelope(ctx: Ctx): {
+  session_id: string;
+  agent_name?: string;
+  run_id?: string;
+  thread_id?: string;
+  _event_id: string;
+  _ts: string;
+} {
+  const e: ReturnType<typeof envelope> = {
+    session_id: ctx.sessionId,
+    _event_id: randomUUID(),
+    _ts: ts(),
+  };
+  if (ctx.agentName !== undefined) e.agent_name = ctx.agentName;
+  if (ctx.runId !== undefined) e.run_id = ctx.runId;
+  if (ctx.threadId !== undefined) e.thread_id = ctx.threadId;
+  return e;
+}
+
+export function newMessageId(): string {
+  return `msg_${randomUUID()}`;
+}
+export function newRunId(): string {
+  return `run_${randomUUID()}`;
+}
+
+export const ev = {
+  runStarted(ctx: Ctx, parentRunId?: string): AgUiEvent {
+    return { type: "RUN_STARTED", ...envelope(ctx), parent_run_id: parentRunId } as AgUiEvent;
+  },
+  runFinished(ctx: Ctx, result?: unknown): AgUiEvent {
+    return { type: "RUN_FINISHED", ...envelope(ctx), result } as AgUiEvent;
+  },
+  runError(
+    ctx: Ctx,
+    message: string,
+    options: { code?: string; terminal?: boolean } = {},
+  ): AgUiEvent {
+    return {
+      type: "RUN_ERROR",
+      ...envelope(ctx),
+      message,
+      code: options.code ?? "RUNTIME_ERROR",
+      terminal: options.terminal ?? true,
+    } as AgUiEvent;
+  },
+  textMessageStart(ctx: Ctx, messageId: string, role = "assistant"): AgUiEvent {
+    return { type: "TEXT_MESSAGE_START", ...envelope(ctx), message_id: messageId, role } as AgUiEvent;
+  },
+  textMessageContent(ctx: Ctx, messageId: string, delta: string): AgUiEvent {
+    return { type: "TEXT_MESSAGE_CONTENT", ...envelope(ctx), message_id: messageId, delta } as AgUiEvent;
+  },
+  textMessageEnd(ctx: Ctx, messageId: string): AgUiEvent {
+    return { type: "TEXT_MESSAGE_END", ...envelope(ctx), message_id: messageId } as AgUiEvent;
+  },
+  /**
+   * Atomic text message (issue #42). CHUNK is the AG-UI shorthand for the
+   * START→CONTENT→END triad; the client transformer/reducer expands it. We use
+   * it with role:"user" to persist + replay the user's own prompt as a bubble
+   * in the event stream. AG-UI's canonical carrier for user input is
+   * `RunAgentInput.messages`/`MESSAGES_SNAPSHOT`, but BrainPilot's whole
+   * history/replay path is the events.jsonl stream, and the spec explicitly
+   * permits a single role:"user" CHUNK to echo a user bubble into the output
+   * stream — which is exactly this case.
+   */
+  textMessageChunk(ctx: Ctx, messageId: string, delta: string, role = "assistant"): AgUiEvent {
+    return { type: "TEXT_MESSAGE_CHUNK", ...envelope(ctx), message_id: messageId, role, delta } as AgUiEvent;
+  },
+  reasoningMessageStart(ctx: Ctx, messageId: string): AgUiEvent {
+    return { type: "REASONING_MESSAGE_START", ...envelope(ctx), message_id: messageId } as AgUiEvent;
+  },
+  reasoningMessageContent(ctx: Ctx, messageId: string, delta: string): AgUiEvent {
+    return { type: "REASONING_MESSAGE_CONTENT", ...envelope(ctx), message_id: messageId, delta } as AgUiEvent;
+  },
+  reasoningMessageEnd(ctx: Ctx, messageId: string): AgUiEvent {
+    return { type: "REASONING_MESSAGE_END", ...envelope(ctx), message_id: messageId } as AgUiEvent;
+  },
+  toolCallStart(ctx: Ctx, toolCallId: string, toolName: string, parentMessageId?: string): AgUiEvent {
+    return {
+      type: "TOOL_CALL_START",
+      ...envelope(ctx),
+      tool_call_id: toolCallId,
+      tool_call_name: toolName,
+      parent_message_id: parentMessageId,
+    } as AgUiEvent;
+  },
+  toolCallArgs(ctx: Ctx, toolCallId: string, delta: string): AgUiEvent {
+    return { type: "TOOL_CALL_ARGS", ...envelope(ctx), tool_call_id: toolCallId, delta } as AgUiEvent;
+  },
+  toolCallEnd(
+    ctx: Ctx,
+    toolCallId: string,
+    terminal?: {
+      status: "completed" | "failed" | "interrupted";
+      durationMs: number;
+      reason?: "user_requested" | "task_interrupted" | "agent_interrupted";
+    },
+  ): AgUiEvent {
+    return {
+      type: "TOOL_CALL_END",
+      ...envelope(ctx),
+      tool_call_id: toolCallId,
+      ...(terminal
+        ? {
+            status: terminal.status,
+            duration_ms: terminal.durationMs,
+            ...(terminal.reason ? { reason: terminal.reason } : {}),
+          }
+        : {}),
+    } as AgUiEvent;
+  },
+  toolCallResult(ctx: Ctx, toolCallId: string, content: string, isError = false, messageId?: string): AgUiEvent {
+    return {
+      type: "TOOL_CALL_RESULT",
+      ...envelope(ctx),
+      tool_call_id: toolCallId,
+      message_id: messageId ?? newMessageId(),
+      content,
+      is_error: isError,
+    } as AgUiEvent;
+  },
+  agentStatusUpdate(
+    ctx: Ctx,
+    name: string,
+    status: "idle" | "running" | "error" | "stopped",
+    extra?: {
+      activeRunId?: string;
+      activeToolExecutions?: string[];
+      activeTools?: Array<{
+        toolCallId: string;
+        toolName: string;
+        runId?: string;
+        startedAt: string;
+        cancellable: boolean;
+        status: "running" | "stopping";
+      }>;
+      retry?: { attempt: number; maxAttempts: number; delayMs: number };
+      lastError?: { message: string; timestamp: string; consecutiveCount: number };
+    },
+  ): AgUiEvent {
+    const e: Record<string, unknown> = {
+      type: "agent_status_update",
+      ...envelope({ ...ctx, agentName: name }),
+      name,
+      status,
+    };
+    if (extra?.activeRunId !== undefined) e.active_run_id = extra.activeRunId;
+    if (extra?.activeToolExecutions)
+      e.active_tool_executions = extra.activeToolExecutions;
+    if (extra?.activeTools) e.active_tools = extra.activeTools;
+    if (extra?.retry) e.retry = extra.retry;
+    if (extra?.lastError) {
+      e.last_error = {
+        message: extra.lastError.message,
+        timestamp: extra.lastError.timestamp,
+        consecutive_count: extra.lastError.consecutiveCount,
+      };
+    }
+    return e as AgUiEvent;
+  },
+  userInputRequest(
+    ctx: Ctx,
+    req: {
+      request_id: string;
+      agent: string;
+      question: string;
+      options?: string[];
+      allow_free_text?: boolean;
+      timeout_sec?: number;
+    },
+  ): AgUiEvent {
+    return {
+      type: "user_input_request",
+      ...envelope(ctx),
+      request_id: req.request_id,
+      agent: req.agent,
+      question: req.question,
+      options: req.options,
+      allow_free_text: req.allow_free_text,
+      timeout_sec: req.timeout_sec,
+    } as AgUiEvent;
+  },
+  userInputResponse(ctx: Ctx, res: { request_id: string; answer: string }): AgUiEvent {
+    return {
+      type: "user_input_response",
+      ...envelope(ctx),
+      request_id: res.request_id,
+      answer: res.answer,
+    } as AgUiEvent;
+  },
+  userInputCancelled(
+    ctx: Ctx,
+    cancellation: { request_id: string; reason: UserInputCancellationReason },
+  ): AgUiEvent {
+    return {
+      type: "user_input_cancelled",
+      ...envelope(ctx),
+      request_id: cancellation.request_id,
+      reason: cancellation.reason,
+    } as AgUiEvent;
+  },
+  systemMessage(
+    sessionId: string,
+    level: "info" | "warning" | "error" | "fatal",
+    message: string,
+    opts?: {
+      agent?: string;
+      details?: string;
+      recoverable?: boolean;
+      terminal?: boolean;
+      id?: string;
+      runId?: string;
+      code?: string;
+      metadata?: WorkspaceRestoreEventMetadata;
+    },
+  ): AgUiEvent {
+    return {
+      type: "system_message",
+      session_id: sessionId,
+      // #167: optional stable id lets the client coalesce repeated messages
+      // (e.g. retry warnings) into one updating bubble instead of appending.
+      ...(opts?.id ? { id: opts.id } : {}),
+      ...(opts?.runId ? { run_id: opts.runId } : {}),
+      ...(opts?.code ? { code: opts.code } : {}),
+      ...(opts?.metadata ? { metadata: opts.metadata } : {}),
+      agent: opts?.agent,
+      level,
+      message,
+      details: opts?.details,
+      timestamp: ts(),
+      recoverable: opts?.recoverable ?? true,
+      ...(opts?.terminal ? { terminal: true } : {}),
+    } as AgUiEvent;
+  },
+  custom(ctx: Ctx, name: string, value: unknown): AgUiEvent {
+    return { type: "CUSTOM", ...envelope(ctx), name, value } as AgUiEvent;
+  },
+  /**
+   * Pi SDK auto/manual compaction — the runtime translates Pi's internal
+   * `compaction_start` / `compaction_end` events onto the AG-UI CUSTOM channel
+   * so clients can render a "context being compacted" indicator instead of
+   * silently seeing the assistant's history collapse. Wire form:
+   *   { type:"CUSTOM", name:"compaction", value: { op:"start", reason, ... } }
+   */
+  compactionStart(ctx: Ctx, reason: CompactionReason): AgUiEvent {
+    const value: CompactionStartValue = { op: "start", reason };
+    return { type: "CUSTOM", ...envelope(ctx), name: CUSTOM_EVENT.COMPACTION, value } as AgUiEvent;
+  },
+  compactionEnd(
+    ctx: Ctx,
+    v: {
+      reason: CompactionReason;
+      aborted: boolean;
+      willRetry: boolean;
+      errorMessage?: string;
+      tokensBefore?: number;
+      estimatedTokensAfter?: number;
+      firstKeptEntryId?: string;
+    },
+  ): AgUiEvent {
+    const value: CompactionEndValue = { op: "end", ...v };
+    return { type: "CUSTOM", ...envelope(ctx), name: CUSTOM_EVENT.COMPACTION, value } as AgUiEvent;
+  },
+};

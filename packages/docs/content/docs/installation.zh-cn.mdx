@@ -1,0 +1,113 @@
+---
+title: 安装与更新
+description: 安装、更新、运行和卸载 BrainPilot，同时避免影响不相关的本地环境。
+---
+
+## 推荐的 npm 安装方式
+
+单用户本地使用时，推荐直接安装已发布的 npm 包：
+
+```bash
+npm install -g @brainpilot/app@0.2.3
+brainpilot up
+```
+
+这个包包含 CLI、后端、运行时、Web UI 和内置技能库，本机启动后即可在浏览器使用。
+
+## 更新并保留数据
+
+先完成或取消活动任务，再停止旧进程。后台模式请指定启动时使用的同一数据目录：
+
+```bash
+brainpilot down --dir ./my-brainpilot-data
+```
+
+服务停止后备份该目录；如果检测到的知识库根目录在数据目录之外，也应单独备份。然后安装选定的已发布版本，并使用原路径重启：
+
+```bash
+npm install -g @brainpilot/app@latest
+brainpilot --version
+brainpilot up --dir ./my-brainpilot-data
+```
+
+要固定升级结果，请把 `latest` 换成确认过的已发布版本。前台模式先按 `Ctrl-C` 停止。重启后检查历史会话、模型配置、持久文件和下载记录；中断的下载需要手动重试。升级不会自动搬迁数据。
+
+回退软件包时，先停止服务，重新安装已知可用的旧版本，再用保留的数据目录启动。不要在软件包回退时删除数据或覆盖备份；旧版本可能无法显示新版本的元数据。
+
+## 卸载
+
+```bash
+npm uninstall -g @brainpilot/app
+```
+
+这只会删除 CLI 包，不会删除你的 BrainPilot 数据目录。
+
+## 数据目录
+
+BrainPilot 会把运行文件放在一个数据目录里。解析顺序是：
+
+1. `--dir <path>`
+2. `BP_DATA_DIR`
+3. 当前目录下的 `./brainpilot`
+
+示例：
+
+```bash
+brainpilot up --dir ./my-brainpilot-data
+```
+
+常见结构：
+
+```text
+brainpilot/
+  bp_template/
+    providers.json
+    mcp_servers.json
+    settings.json
+    skills/
+  data/
+    datasets/
+      .jobs.json
+  workspaces/
+  .bp/
+  .runtime/
+```
+
+## 本地隔离边界
+
+npm 方式是本地进程，不会自动创建 Docker 沙箱。智能体会在数据目录里的会话 workspace 下读写文件，所以请谨慎选择数据目录，不要把它指向你不希望智能体访问的私人目录。
+
+如果需要更强的进程隔离，请使用 [Docker 部署](./docker)，而不是 npm 本地进程。
+
+## 从源码运行
+
+如果你想使用 GitHub 上的最新代码，或准备参与开发：
+
+```bash
+git clone https://github.com/NeuroAIHub/BrainPilot.git
+cd BrainPilot
+npm install
+npm run build
+npm run bp -- up
+```
+
+无 Key 冒烟测试：
+
+```bash
+BP_MOCK=1 npm run bp -- up
+```
+
+通过 `npm run` 传参数时，保留 `--` 分隔符，这样参数才会传给 BrainPilot CLI。
+
+## 后台模式
+
+让 BrainPilot 在后台运行：
+
+```bash
+brainpilot up --detach
+brainpilot status
+brainpilot logs
+brainpilot down
+```
+
+刚上手时建议先用前台模式；熟悉后，如果希望命令返回后服务继续运行，再使用后台模式。

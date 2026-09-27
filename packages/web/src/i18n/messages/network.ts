@@ -1,0 +1,216 @@
+import { defineMessages } from "../types";
+
+export default defineMessages(
+  {
+    // Empty state
+    "network.empty":
+      "当前会话还没有智能体协作活动。发送一条消息开始任务后，这里会出现智能体节点和它们之间的消息流。",
+
+    // Legend
+    "network.legend.running": "运行中",
+    "network.legend.live": "在线",
+    "network.legend.dormant": "休眠",
+    "network.legend.error": "错误",
+    "network.legend.delegate": "委派",
+      "network.legend.result": "结果",
+      "network.legend.counter": "{live} 个参与 · {running} 运行中 · {edges} 条连线 · {msgs} 条消息",
+      "network.available.summary": "{count} 个可用但未参与的智能体",
+      "network.subagents.summary": "{count} 个子智能体",
+      "network.subagents.artifacts": "{count} 个产物",
+      "network.subagents.stop": "中断",
+      "network.subagents.stopping": "中断中…",
+
+    // Aria labels
+    "network.aria.legend": "网络图例",
+    "network.aria.viewport": "智能体协作网络",
+    "network.aria.detail": "选中详情",
+    "network.aria.tabs": "智能体面板视图",
+    "network.aria.edgeOne": "{from} 向 {to} 发送了 {count} 条消息",
+    "network.aria.edgeMany": "{from} 向 {to} 发送了 {count} 条消息",
+    "network.aria.node": "{name} 智能体（{status}）",
+
+    // Status labels (display)
+    "network.status.running": "运行中",
+    "network.status.idle": "空闲",
+    "network.status.error": "错误",
+    "network.status.stopped": "已停止",
+    "network.status.live": "在线",
+    "network.status.dormant": "休眠",
+
+    // Node
+    "network.node.notSpawned": "尚未创建",
+
+    // Tabs
+    "network.tab.detail": "详情",
+    "network.tab.analytics": "分析",
+    "network.tab.timeline": "时间线",
+
+    // Agent detail
+    "network.detail.dormant": "休眠",
+    "network.detail.notSpawned": "尚未创建",
+    "network.detail.notAlive": "未存活",
+    "network.detail.responsibility": "职责",
+    "network.detail.status": "状态",
+    "network.detail.state": "状态",
+      "network.detail.currentTask": "当前任务",
+      "network.detail.idleWaiting": "空闲 — 等待指令",
+      "network.detail.runningTask": "正在处理任务",
+      "network.detail.notSpawnedByPrincipal": "尚未由主智能体创建",
+    "network.detail.updated": "更新于",
+    "network.detail.communication": "通信",
+    "network.detail.commCount": "{sent} 已发送 · {received} 已接收",
+    "network.detail.activityStats": "活动统计",
+    "network.detail.totalMessages": "消息总数",
+    "network.detail.pctOfSession": "（占会话 {pct}%）",
+    "network.detail.messageBreakdown": "消息构成",
+    "network.detail.breakdownValue": "{assistant} 回复 · {reasoning} 推理 · {tool} 工具",
+    "network.detail.toolCalls": "工具调用",
+    "network.detail.topTools": "常用工具",
+    "network.detail.contentVolume": "内容量",
+    "network.detail.volumeValue": "{chars} 字符 · 约 {tokens} tokens",
+    "network.detail.communicationPartners": "通信对象",
+    "network.detail.availableTools": "可用工具",
+    "network.detail.noMcpTools": "无 MCP 工具",
+    "network.detail.displayFilters": "显示筛选",
+    "network.detail.filtersNote": "仅影响该智能体在聊天视图中的显示，网络图不受影响。",
+    // Issue #278 — global (workspace-wide) message-filter section in agent detail.
+    "network.detail.globalFilters": "全局消息过滤",
+    "network.globalFilter.hide-non-fatal-agent-errors.label": "折叠智能体报错（非致命）",
+    "network.globalFilter.hide-non-fatal-agent-errors.description":
+      "隐藏 error / warning 级别的系统消息。多数是智能体自愈型报错（可重试并已恢复）。fatal 级别不受此规则影响，仍会在聊天中显示。",
+    "network.globalFilter.hiddenErrors.count": "当前会话已隐藏 {count} 条报错",
+    "network.globalFilter.spurious-dot.label": "隐藏空占位消息",
+    "network.globalFilter.spurious-dot.description":
+      "隐藏只包含单个 “.” 的助手回复。模型进入防御性思考时偶尔会先发送这种占位符再调用工具。",
+    "network.detail.sent": "已发送（{count}）",
+    "network.detail.received": "已接收（{count}）",
+    "network.detail.noOutgoing": "暂无发出的消息。",
+    "network.detail.noIncoming": "暂无收到的消息。",
+
+    // Edge detail
+    "network.edge.messages": "{count} 条消息",
+    "network.edge.last": "最近：{time}",
+    "network.edge.conversation": "对话",
+
+    // Message list / shared
+    "network.msg.fallback": "消息",
+    "network.msg.empty": "（空）",
+    "network.msg.more": "+ 还有 {count} 条",
+
+    // Filter chips
+    "network.filter.ariaGroup": "已隐藏的事件类型",
+    "network.filter.hiding": "隐藏：",
+    "network.filter.nothing": "无",
+    "network.filter.stopHiding": "取消隐藏 {label}",
+    "network.filter.addRule": "添加隐藏规则",
+    "network.filter.addFilter": "添加筛选",
+    "network.filter.popoverHeader": "隐藏以下类型的事件：",
+    "network.filter.messages.label": "消息",
+    "network.filter.messages.description": "该 Agent 的文本回复",
+    "network.filter.tools.label": "工具调用",
+    "network.filter.tools.description": "工具调用与结果",
+    "network.filter.hooks.label": "钩子",
+    "network.filter.hooks.description": "系统诊断事件",
+  },
+  {
+    "network.empty":
+      "No agent collaboration activity in this session yet. Once you send a message to start a task, agent nodes and the message flow between them will appear here.",
+
+    "network.legend.running": "running",
+    "network.legend.live": "live",
+    "network.legend.dormant": "dormant",
+    "network.legend.error": "error",
+    "network.legend.delegate": "delegate",
+    "network.legend.result": "result",
+      "network.legend.counter": "{live} active · {running} running · {edges} links · {msgs} messages",
+      "network.available.summary": "{count} available agents not used",
+      "network.subagents.summary": "{count} subagents",
+      "network.subagents.artifacts": "{count} artifacts",
+      "network.subagents.stop": "Stop",
+      "network.subagents.stopping": "Stopping…",
+
+    "network.aria.legend": "Network legend",
+    "network.aria.viewport": "Agent collaboration network",
+    "network.aria.detail": "Selection detail",
+    "network.aria.tabs": "Agent panel views",
+    "network.aria.edgeOne": "{from} sent {count} message to {to}",
+    "network.aria.edgeMany": "{from} sent {count} messages to {to}",
+    "network.aria.node": "{name} agent ({status})",
+
+    "network.status.running": "running",
+    "network.status.idle": "idle",
+    "network.status.error": "error",
+    "network.status.stopped": "stopped",
+    "network.status.live": "live",
+    "network.status.dormant": "dormant",
+
+    "network.node.notSpawned": "not yet spawned",
+
+    "network.tab.detail": "Detail",
+    "network.tab.analytics": "Analytics",
+    "network.tab.timeline": "Timeline",
+
+    "network.detail.dormant": "dormant",
+    "network.detail.notSpawned": "not yet spawned",
+    "network.detail.notAlive": "not alive",
+    "network.detail.responsibility": "Responsibility",
+    "network.detail.status": "Status",
+    "network.detail.state": "State",
+      "network.detail.currentTask": "Current task",
+      "network.detail.idleWaiting": "Idle — waiting for instructions",
+      "network.detail.runningTask": "Working on the task",
+      "network.detail.notSpawnedByPrincipal": "Not yet spawned by Principal",
+    "network.detail.updated": "Updated",
+    "network.detail.communication": "Communication",
+    "network.detail.commCount": "{sent} sent · {received} received",
+    "network.detail.activityStats": "Activity Statistics",
+    "network.detail.totalMessages": "Total messages",
+    "network.detail.pctOfSession": "({pct}% of session)",
+    "network.detail.messageBreakdown": "Message breakdown",
+    "network.detail.breakdownValue": "{assistant} assistant · {reasoning} reasoning · {tool} tool",
+    "network.detail.toolCalls": "Tool calls",
+    "network.detail.topTools": "Top tools",
+    "network.detail.contentVolume": "Content volume",
+    "network.detail.volumeValue": "{chars} chars · ~{tokens} tokens",
+    "network.detail.communicationPartners": "Communication partners",
+    "network.detail.availableTools": "Available tools",
+    "network.detail.noMcpTools": "no MCP tools",
+    "network.detail.displayFilters": "Display filters",
+    "network.detail.filtersNote": "Affects this agent in the Chat view only. Network graph is unchanged.",
+    // Issue #278 — global (workspace-wide) message-filter section in agent detail.
+    "network.detail.globalFilters": "Global message filters",
+    "network.globalFilter.hide-non-fatal-agent-errors.label": "Fold non-fatal agent errors",
+    "network.globalFilter.hide-non-fatal-agent-errors.description":
+      "Hides error / warning system messages. Most are self-healing agent failures (already recovered by retry). Fatal-level messages are always shown.",
+    "network.globalFilter.hiddenErrors.count": "{count} hidden in this session",
+    "network.globalFilter.spurious-dot.label": "Hide placeholder-dot messages",
+    "network.globalFilter.spurious-dot.description":
+      "Hides assistant replies that contain only a single '.' character — occasional defensive-thinking placeholders emitted before a tool call.",
+    "network.detail.sent": "Sent ({count})",
+    "network.detail.received": "Received ({count})",
+    "network.detail.noOutgoing": "No outgoing messages.",
+    "network.detail.noIncoming": "No incoming messages.",
+
+    "network.edge.messages": "{count} messages",
+    "network.edge.last": "last: {time}",
+    "network.edge.conversation": "Conversation",
+
+    "network.msg.fallback": "msg",
+    "network.msg.empty": "(empty)",
+    "network.msg.more": "+ {count} more",
+
+    "network.filter.ariaGroup": "Hidden event types",
+    "network.filter.hiding": "Hiding:",
+    "network.filter.nothing": "nothing",
+    "network.filter.stopHiding": "Stop hiding {label}",
+    "network.filter.addRule": "Add a hide rule",
+    "network.filter.addFilter": "add filter",
+    "network.filter.popoverHeader": "Hide events of type:",
+    "network.filter.messages.label": "messages",
+    "network.filter.messages.description": "Text replies from this agent",
+    "network.filter.tools.label": "tool calls",
+    "network.filter.tools.description": "Tool invocations and results",
+    "network.filter.hooks.label": "hooks",
+    "network.filter.hooks.description": "System diagnostic events",
+  },
+);

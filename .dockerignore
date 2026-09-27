@@ -1,0 +1,35 @@
+# Build context excludes — keep the image build fast and clean.
+node_modules
+**/node_modules
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+# Fumadocs/Next caches contain host-specific paths; regenerate them in the image.
+packages/docs/.source
+packages/docs/.next
+packages/docs/out
+.git
+.gitignore
+.worktrees
+legacy
+docs
+brainpilot
+.bp
+.env
+.env.*
+npm-debug.log
+*.log
+.DS_Store
+
+# KnowledgeBase artefacts — the Dockerfile COPYs KnowledgeBase/ so
+# stage.mjs can populate packages/kb-scripts/kb/ (issue #378 Part 1),
+# but the user-data / model-weight / venv / chunk dirs would balloon the
+# build context to multi-GB. Only ship what stage.mjs actually consumes.
+KnowledgeBase/.venv
+KnowledgeBase/models
+KnowledgeBase/source
+KnowledgeBase/chunks
+KnowledgeBase/vectorstore
+KnowledgeBase/scripts/__pycache__
+**/__pycache__
+*.pyc
