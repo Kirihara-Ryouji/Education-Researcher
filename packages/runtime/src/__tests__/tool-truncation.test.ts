@@ -21,10 +21,11 @@ import type { SystemToolResult } from "../types.js";
 
 /** Build a fake MCP bridge that returns `tools` with a healthy server status. */
 function fakeMcpBridge(tools: SystemTool[]): McpBridge {
+  const attributed = tools.map((tool) => ({ ...tool, mcpServer: "test" }));
   return {
-    tools,
-    connectAll: async (_cfg: McpServersConfig) => tools,
-    connectAllWithStatus: async (_cfg: McpServersConfig) => ({ tools, connectedServers: ["test"], skippedServers: [], failures: [] }),
+    tools: attributed,
+    connectAll: async (_cfg: McpServersConfig) => attributed,
+    connectAllWithStatus: async (_cfg: McpServersConfig) => ({ tools: attributed, connectedServers: ["test"], skippedServers: [], failures: [] }),
     close: async () => {},
   } as unknown as McpBridge;
 }
@@ -46,7 +47,7 @@ async function writeMcpServersConfig(dataDir: string, names: string[]): Promise<
   const dir = join(dataDir, "bp_template");
   await mkdir(dir, { recursive: true });
   const cfg = {
-    mcpServers: Object.fromEntries(names.map((n) => [n, { type: "stdio", command: "echo" }])),
+    mcpServers: Object.fromEntries(names.map((n) => [n, { type: "stdio", command: "echo", researchDomains: ["education"] }])),
   };
   await writeFile(join(dir, "mcp_servers.json"), JSON.stringify(cfg), "utf8");
 }

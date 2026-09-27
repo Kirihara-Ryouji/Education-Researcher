@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "BrainPilot built-in Agent Skills content (neuroscience / cognitive-science / writing), loaded via Pi's native skill pipeline",
+  "description": "BrainPilot built-in Agent Skills content for education research, with optional neuroscience and cognitive-science skills",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

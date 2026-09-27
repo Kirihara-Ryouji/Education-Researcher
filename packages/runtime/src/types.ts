@@ -208,9 +208,8 @@ export type AgentSessionFactory = (params: {
     extensionPaths?: string[];
   }>;
   /**
-   * #309: when true, register the router-skill-guard extension so generic file
-   * tools cannot read `<dataRoot>/bp_template/skills-router`. Set when
-   * `skill_search` is disabled. Requires `routerSkillsDir`.
+   * Register the router-skill-guard extension so generic file tools cannot
+   * bypass a disabled or profile-filtered router catalog.
    */
   blockRouterSkills?: boolean;
   /**

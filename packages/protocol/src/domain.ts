@@ -28,6 +28,10 @@ export const EXAMPLE_MODEL = "claude-sonnet-4-6";
 export const DomainResourcesSchema = z.enum(["full", "base"]);
 export type DomainResources = z.infer<typeof DomainResourcesSchema>;
 
+/** Research focus frozen when a session is created. */
+export const ResearchDomainSchema = z.enum(["education", "neuroscience"]);
+export type ResearchDomain = z.infer<typeof ResearchDomainSchema>;
+
 /** Shared reasoning effort for every agent in a session. */
 export const ThinkingLevelSchema = z.enum(["off", "low", "medium", "high"]);
 export type ThinkingLevel = z.infer<typeof ThinkingLevelSchema>;
@@ -39,6 +43,8 @@ export const SessionSchema = z.object({
   updatedAt: z.string(),
   /** Optional for compatibility with older runtimes; new runtimes always emit it. */
   domainResources: DomainResourcesSchema.optional(),
+  /** Optional for older runtimes; newly created sessions always include it. */
+  researchDomain: ResearchDomainSchema.optional(),
   /** One reasoning effort shared by all agents in this session. */
   thinkingLevel: ThinkingLevelSchema.optional(),
   /** Whether the model bound to this session supports extended reasoning. */
@@ -294,6 +300,7 @@ export const SessionStateSnapshotSchema = z.object({
   lastActivityTs: z.string(),
   /** Frozen when the session is created and persisted across restore. */
   domainResources: DomainResourcesSchema.optional(),
+  researchDomain: ResearchDomainSchema.optional(),
   /**
    * Cumulative real token usage for this session (total + per-agent). Optional
    * for forward/backward compat: a frame from an older runtime, or before the
@@ -777,6 +784,7 @@ export const McpServerEntrySchema = z.object({
   url: z.string().optional(),
   headers: z.record(z.string(), z.string()).optional(),
   timeout: z.number().optional(),
+  researchDomains: z.array(ResearchDomainSchema).min(1).max(2).optional(),
   /**
    * #377: platform-managed entry — the UI must not offer Edit / Delete and must
    * not surface the raw URL (a hosted preset URL can carry the platform's shared
@@ -819,6 +827,8 @@ const httpUrl = z
   .refine((u) => /^https?:\/\//i.test(u) && isParseableUrl(u), {
     message: "must be a valid http(s) URL (e.g. https://host/path)",
   });
+const mcpResearchDomains = z.array(ResearchDomainSchema).min(1).max(2)
+  .refine((domains) => new Set(domains).size === domains.length, "research domains must not repeat");
 export const McpServerConfigSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("stdio"),
@@ -826,18 +836,21 @@ export const McpServerConfigSchema = z.discriminatedUnion("type", [
     args: z.array(z.string()).optional(),
     env: z.record(z.string(), z.string()).optional(),
     timeout: z.number().optional(),
+    researchDomains: mcpResearchDomains.optional(),
   }),
   z.object({
     type: z.literal("http"),
     url: httpUrl,
     headers: z.record(z.string(), z.string()).optional(),
     timeout: z.number().optional(),
+    researchDomains: mcpResearchDomains.optional(),
   }),
   z.object({
     type: z.literal("sse"),
     url: httpUrl,
     headers: z.record(z.string(), z.string()).optional(),
     timeout: z.number().optional(),
+    researchDomains: mcpResearchDomains.optional(),
   }),
 ]);
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;

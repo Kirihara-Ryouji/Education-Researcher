@@ -2,11 +2,13 @@
   <img src="assets/banner.png" alt="BrainPilot" width="680"/>
 </p> -->
 
-<h1 align="center"><img src="assets/brand/icon_light.png" alt="BrainPilot 图标" height="46" align="absmiddle"/> BrainPilot：加速自动脑科学发现的智能体系统</h1>
+<h1 align="center"><img src="assets/brand/icon_light.png" alt="BrainPilot 图标" height="46" align="absmiddle"/> Education Researcher：教育研究工作台</h1>
 
 <p align="center">
-BrainPilot 是一个开源、人在回路的脑科学智能体研究系统。它整合专业智能体、领域知识、科研技能和工具接口，帮助研究者覆盖完整科研流程：文献综述、假设细化、实验设计、数据分析、报告撰写和科学结论审查。
+本仓库基于开源 BrainPilot，面向教育研究。新会话以教育研究为默认领域，脑科学能力保留为明确选择的选项；研究者可管理问题、证据、方案、分析和报告，并由智能体协助研究任务。
 </p>
+
+> **本仓库与上游版本的区别：**教育领域的默认配置仅适用于本仓库源码，不代表已发布的 `@brainpilot/app` npm 包或 `brainpilot.chat` 托管服务。原项目为 [NeuroAIHub/BrainPilot](https://github.com/NeuroAIHub/BrainPilot)，许可证和原作者信息保留。使用本分支请先阅读[教育研究版使用与边界](EDUCATION-RESEARCH.md)；下文发布记录、脑科学案例和部分安装说明描述的是上游项目。
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@brainpilot/app"><img src="https://img.shields.io/npm/v/@brainpilot/app?style=flat-square&logo=npm&color=CB3837" alt="npm version"/></a>
@@ -41,7 +43,7 @@ BrainPilot 是一个开源、人在回路的脑科学智能体研究系统。它
 
 ---
 
-## 📰 最新动态
+## 📰 上游 BrainPilot 版本记录
 
 - **2026-09-08** — [BrainPilot v0.2.3](https://github.com/NeuroAIHub/BrainPilot/releases/tag/v0.2.3) 扩展研究数据集，打通桌面端数据与证据工作流，并更新中英文指南。详见[更新日志](CHANGELOG.md#023---2026-09-08)。
 
@@ -58,17 +60,17 @@ BrainPilot 是一个开源、人在回路的脑科学智能体研究系统。它
 
 ## 📖 概览
 
-BrainPilot 是一个面向脑科学的开源人工智能研究工作台，帮助研究者将宽泛的科学问题转化为结构化、可执行、可检查的研究流程。系统以主研究员（PI）智能体为核心，由它与研究者对话、理解研究目标、规划任务，并协调文献、实验、工程、写作和审查智能体协同工作。BrainPilot 强调人在回路的科研协作范式：研究者始终保留判断权和控制权，而智能体负责处理证据密集、跨领域和重复性的研究任务。系统集成了脑科学领域知识、方法技能、分析流程和科研工具，并通过 [Graph of Trace（GoT）](https://aclanthology.org/2026.acl-demo.29/)记录研究过程，使中间操作、证据来源、生成结论和潜在风险都可以被检查和回溯。
+Education Researcher 沿用 BrainPilot 的多智能体编排、研究轨迹和人在回路机制，在此基础上加入教育研究业务记录。研究者可以建立项目、登记与核验证据、版本化方案、运行基础描述统计，并导出可追溯的报告。新会话默认使用教育研究提示和教育方法资源；需要脑科学研究时可明确切换。底层模型仍由使用者选择服务商提供，领域配置不会删除模型预训练知识，也不能替代人工核验。
 
 ## ✨ 亮点
 
-- **🧠 面向脑科学研究** — 支持从文献综述、假设细化、实验设计到数据分析、论文写作和科学审查的完整科研流程。
+- **📚 教育研究优先** — 新会话默认围绕教育研究问题、方法与证据工作，脑科学资源按需启用。
 - **🤝 PI 智能体协调专业智能体团队** — PI 智能体统一理解用户需求、规划任务，并协调文献、实验、工程、写作和审查智能体协同工作。
-- **📚 整合领域知识与科研技能** — 集成脑科学相关知识、研究方法、分析流程、写作规范和工具接口，使智能体能够调用专业知识完成具体科研任务。
+- **🧭 领域资源可选择** — 教育方法技能与经过核验的来源索引随源码提供；原有脑科学技能继续保留，供明确选择该领域的会话使用。
 - **🛡️ 审查智能体提升科研可靠性** — 审查科学结论、证据链、引用来源、幻觉风险、遗漏信息和缺乏支撑的推理，帮助研究者发现潜在问题。
 - **🔭 [Graph of Trace](https://aclanthology.org/2026.acl-demo.29/) 展示研究过程** — 将任务结构、智能体行为、工具调用、证据流向和关键决策点可视化，方便研究者检查、回溯和干预。
 - **🔌 可扩展的科研工具生态** — 支持连接模型、MCP 工具、文献数据库、代码执行环境和自定义科研工具，适配不同研究场景。
-- **🚀 快速本地启动** — 简单安装后即可在浏览器中开始使用，降低脑科学智能体系统的部署和使用门槛。
+- **🚀 本地研究工作台** — 从本仓库源码启动，在浏览器中记录、检查并继续研究；配置模型服务商后才能运行真实智能体任务。
 
 <p align="center">
   <img src="assets/readme/brainpilot-overview.png" alt="BrainPilot 多智能体科研系统与 Graph of Trace" width="100%"/>
@@ -80,7 +82,7 @@ BrainPilot 是一个面向脑科学的开源人工智能研究工作台，帮助
 
 ---
 
-## 🧪 精选真实研究案例
+## 🧪 上游脑科学研究案例
 
 以下案例使用真实脑科学数据，并保留结果的统计边界。
 
@@ -115,26 +117,28 @@ BrainPilot 是一个面向脑科学的开源人工智能研究工作台，帮助
 
 ## 🚀 快速开始
 
-BrainPilot 通过 **`@brainpilot/app`** 以本地进程方式运行 —— 无需 Docker，这是推荐的上手方式。
+本教育研究版需要从**本仓库源码**启动。上游的 `@brainpilot/app` npm 包未包含本仓库的领域切换和教育方法技能。
 
 ### 环境要求
 
-- **[Node.js](https://nodejs.org/en/download/)** ≥ 22
+- **[Node.js](https://nodejs.org/en/download/)** ≥ 22.13
 - 一个模型服务商 **API Key**；如果只是冒烟测试，可以使用 `BP_MOCK=1`
 
 ### 1. 安装并启动
 
-```bash
-npm install -g @brainpilot/app@0.2.3
-brainpilot up
+```powershell
+npm ci
+npm run build
+npm run bp -- up
 ```
 
-然后在浏览器打开终端打印的本地地址。`brainpilot` 命令也有一个短别名：`bnpt`。
+在本仓库根目录执行这些命令，然后在浏览器打开终端打印的本地地址。完整的教育研究工作流见[使用指南](EDUCATION-RESEARCH.md)。
 
 还没有 API Key？可以先用 mock 模式启动：
 
-```bash
-BP_MOCK=1 brainpilot up
+```powershell
+$env:BP_MOCK = '1'
+npm run bp -- up
 ```
 
 ### 2. 配置模型服务商
@@ -148,8 +152,8 @@ Provider 可以选择自动、256K 或 1M 上下文。1M 模式会在约 900K �
 
 更想用命令行初始化？
 
-```bash
-brainpilot init --api-key <key> --base-url https://your-gateway.example.com/api --model your_model_name
+```powershell
+npm run bp -- init --api-key <key> --base-url https://your-gateway.example.com/api --model your_model_name
 ```
 
 多服务商、OpenAI 兼容端点、自定义 header 和配置文件细节，见
@@ -157,11 +161,11 @@ brainpilot init --api-key <key> --base-url https://your-gateway.example.com/api 
 
 ### 3. 常用命令
 
-```bash
-brainpilot up --detach   # 后台运行
-brainpilot status        # 查看健康状态和子进程 pid
-brainpilot logs          # 跟踪后端日志
-brainpilot down          # 停止后台后端
+```powershell
+npm run bp -- up --detach   # 后台运行
+npm run bp -- status        # 查看健康状态和子进程 pid
+npm run bp -- logs          # 跟踪后端日志
+npm run bp -- down          # 停止后台后端
 ```
 
 默认情况下，BrainPilot 会把数据放在当前目录下的 `./brainpilot`。可以用 `--dir <path>` 或
@@ -178,27 +182,23 @@ brainpilot down          # 停止后台后端
 完整的新手指南、模型服务商配置、MCP 配置和故障排查，请查看公开文档：
 **[brainpilot.chat/docs](https://brainpilot.chat/docs)**。
 
-### 从源码运行（GitHub 最新代码）
+### 上游 BrainPilot 安装方式
 
-想直接用 GitHub 上的最新代码，而不是已发布的 npm 包？克隆仓库、构建、启动：
+若想使用上游发布的 BrainPilot，不需要本仓库新增的教育领域功能，可安装上游 npm 包：
 
 ```bash
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
-npm install          # 安装 workspace 依赖
-npm run build        # 构建所有包
-npm run bp -- up     # 从源码启动（-- 用于把 flag 透传给 CLI）
+npm install -g @brainpilot/app@0.2.3
+brainpilot up
 ```
 
-然后打开打印出的地址。完整开发流程（端口、分支模型、测试）见
-[`CONTRIBUTING.md`](CONTRIBUTING.md)。
+`brainpilot` 命令也有短别名 `bnpt`。该发行版属于[上游项目](https://github.com/NeuroAIHub/BrainPilot)，不包含本仓库新增的教育领域设置。完整开发流程（端口、分支模型、测试）见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 ### 让你的智能体替你部署
 
 已经在用 **Claude Code** 或 **OpenAI Codex**？直接告诉你的智能体：
 
 ```text
-全局安装 @brainpilot/app 这个 npm 包，然后运行 brainpilot up，并把可以打开的地址给我。
+在当前仓库运行 npm ci、npm run build 和 npm run bp -- up，并把可以打开的地址给我。
 ```
 
 > [!TIP]
@@ -226,10 +226,7 @@ npm run bp -- up     # 从源码启动（-- 用于把 flag 透传给 CLI）
 
 ### 内置技能库
 
-智能体可以按需调用 **经过验证的领域方法学** —— 无需任何配置。内置技能以 `@brainpilot/skills`
-内容包形式提供，通过 **Pi 原生的 skill 流水线** 加载（独立于 MCP）：每个技能的 `name` +
-`description` 会被放进智能体的系统提示，完整的 `SKILL.md` 正文按需读取（渐进式披露）。智能体也可
-以用 `/skill:<name>` 强制加载某个技能。
+智能体可以按需调用**内置方法技能**。技能以 `@brainpilot/skills` 内容包提供，通过 Pi 的技能流水线和 `skill_search` 加载（独立于 MCP）。会话只会发现当前研究方向允许的技能；技能正文按需读取。技能内容仍需结合研究问题和原始文献核验。
 
 技能来源：
 
@@ -240,8 +237,8 @@ npm run bp -- up     # 从源码启动（-- 用于把 flag 透传给 CLI）
 
 - **目录结构** —— `packages/skills/skills/`，两级目录树 `<category>/<skill-name>/SKILL.md`（可选 `references/` 存放可下钻的细节）。
 - **部署时** —— **物化到你的数据目录** `<data-dir>/bp_template/skills/`，一份可编辑的副本；已存在的技能永不会被覆盖。
-- **当前规模** —— 72 个内置技能，覆盖 7 个主流研究领域。
-- **覆盖领域** —— 细胞、分子、遗传与药理；认知与行为；基础方法与基础设施；人类神经影像与电生理；计算建模与理论；文献与报告工具；临床与应用研究。
+- **当前规模** —— 源码包含 80 个 `SKILL.md` 文件，其中 6 个为新增教育研究方法技能；不同会话只开放适合其研究方向的技能。
+- **覆盖领域** —— 教育研究方法，以及原有的脑科学、基础方法、文献、写作与科研计算资源。
 
 <details>
 <summary><b>技能分类与如何新增技能</b></summary>
@@ -271,6 +268,7 @@ npm run bp -- up     # 从源码启动（-- 用于把 flag 透传给 CLI）
 | `19_Pharmacology` | 药物、靶点、临床试验与监管数据库 |
 | `20_Infrastructure` | 科研计算基础设施 |
 | `21_Electrophysiology` | 胞外电生理 spike sorting（SpikeInterface） |
+| `22_Education` | 教育证据综述、研究设计、测量、质性、学习分析与教育 AI 评价 |
 
 **新增一个技能：**
 
@@ -341,7 +339,9 @@ BrainPilot 托管服务使用一套经过筛选和授权的脑科学语料。该
 BrainPilot 现已自带一套端到端的入库流水线，位于
 [`KnowledgeBase/`](./KnowledgeBase/README.md) 目录。打开**设置 → 知识库**，选择 PDF、准备
 本地搜索环境、配置 OCR／元数据抽取，再点**准备搜索**。高级区域显示实际根目录和处理日志。
-建立索引后，智能体可以通过两个内置工具检索论文：
+以下本地知识库属于上游脑科学资源。只有明确选择“脑科学研究”的会话才能使用这两个内置检索工具；教育会话可使用其允许的教育技能及另行配置的教育领域 MCP 服务。
+
+建立索引后，脑科学会话中的智能体可以通过两个内置工具检索论文：
 
 - **`get_domain_knowledge_local`** —— 基于 bge-m3 召回 + bge-reranker-v2-m3 精排的本地向量检索。
 - **`search_papers_local`** —— 针对 `KB_source.json` 论文库的多条件元数据过滤 + 关键词排序检索。
@@ -354,6 +354,8 @@ BrainPilot 现已自带一套端到端的入库流水线，位于
 [`KnowledgeBase/README.md`](./KnowledgeBase/README.md)。
 
 #### 按会话切换资源模式（高级）
+
+新会话的 `researchDomain` 缺省为 `"education"`，可明确设为 `"neuroscience"`；缺少该字段的旧会话按脑科学恢复。它与下述 `domainResources` 评测开关是两个独立设置，均在创建会话后固定。
 
 Runtime 的 `POST /sessions` 接口支持
 `domainResources: "full" | "base"`（缺省为向后兼容的 `full`）。`base`
@@ -374,6 +376,8 @@ BrainPilot 可以把 **Model Context Protocol** 工具暴露给智能体。配�
 `mcp__<server>__<tool>` 命名空间出现。支持三种传输方式：**stdio**、**streamable-http** 和
 **sse**。
 
+每个服务器可在设置中选择“教育研究”“脑科学研究”或两者。未标注 `researchDomains` 的旧配置只在脑科学会话中开放；若要让教育会话使用现有服务，请编辑该服务器并明确选择教育研究。下文的上游 MCP 文档尚未涵盖这项本仓库特有的领域设置。
+
 > 💡 **推荐：** 用 [Tavily](https://www.tavily.com/) 给智能体做联网搜索。
 
 最简单的添加方式是启动后用 **Settings UI**：打开 **Settings → MCP**，点击 **添加服务器**，选择
@@ -386,9 +390,8 @@ BrainPilot 可以把 **Model Context Protocol** 工具暴露给智能体。配�
 <details>
 <summary><b>配置格式与三种传输方式</b></summary>
 
-编辑 `<data-dir>/bp_template/mcp_servers.json`（全局，所有会话共享）或
-`<data-dir>/.bp/<session-id>/mcp_servers.json`（按会话）。格式是标准的 MCP/Claude `mcpServers`
-映射；用 `type` 选择传输方式：
+编辑 `<data-dir>/bp_template/mcp_servers.json`（首选）或
+`<data-dir>/.bp/mcp_servers.json`（兼容位置）。它们是全局服务器配置；具体工具会按服务器的 `researchDomains` 选择进入哪类新会话。格式是标准的 MCP/Claude `mcpServers` 映射，用 `type` 选择传输方式：
 
 ```jsonc
 {
@@ -404,6 +407,7 @@ BrainPilot 可以把 **Model Context Protocol** 工具暴露给智能体。配�
     "my-api": {
       "type": "http",
       "url": "https://your-host.example.com/mcp",
+      "researchDomains": ["education", "neuroscience"],
       "headers": { "Authorization": "Bearer <token>" }
     },
     // 远端，走 server-sent events：

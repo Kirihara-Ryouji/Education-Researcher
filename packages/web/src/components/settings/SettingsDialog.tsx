@@ -92,7 +92,19 @@ const DEFAULT_MCP_FORM = {
   command: "",
   args: "",
   url: "",
+  researchDomains: ["education"] as NonNullable<McpServerEntry["researchDomains"]>,
 };
+
+function mcpDomainChoice(domains: McpServerEntry["researchDomains"]): "education" | "neuroscience" | "both" {
+  const enabled = domains?.length ? domains : ["neuroscience"];
+  return enabled.includes("education") && enabled.includes("neuroscience") ? "both"
+    : enabled.includes("education") ? "education" : "neuroscience";
+}
+
+function mcpDomainsForChoice(choice: string): NonNullable<McpServerEntry["researchDomains"]> {
+  return choice === "both" ? ["education", "neuroscience"]
+    : choice === "neuroscience" ? ["neuroscience"] : ["education"];
+}
 
 const colorOptions = ["#111111", "#16a34a", "#2563eb", "#7c3aed", "#f59e0b", "#d92d20", "#64748b"];
 const PROVIDER_UPDATED_EVENT = "provider-profiles-updated";
@@ -484,8 +496,8 @@ export function SettingsDialog({ isOpen, onClose, initialTab, returnFocusTo }: S
     try {
       const config: Omit<McpServerEntry, "name"> =
         mcpForm.type === "stdio"
-          ? { type: "stdio", command: mcpForm.command, args: splitList(mcpForm.args) }
-          : { type: mcpForm.type, url: mcpForm.url };
+          ? { type: "stdio", command: mcpForm.command, args: splitList(mcpForm.args), researchDomains: mcpForm.researchDomains }
+          : { type: mcpForm.type, url: mcpForm.url, researchDomains: mcpForm.researchDomains };
       const server = editingMcpName
         ? await api.mcpServers.update(editingMcpName, config)
         : await api.mcpServers.add(mcpForm.name, config);
@@ -507,6 +519,7 @@ export function SettingsDialog({ isOpen, onClose, initialTab, returnFocusTo }: S
       command: server.command || "",
       args: (server.args || []).join(", "),
       url: server.url || "",
+      researchDomains: server.researchDomains?.length ? server.researchDomains : ["neuroscience"],
     });
     setIsMcpFormOpen(true);
   };
@@ -761,6 +774,7 @@ export function SettingsDialog({ isOpen, onClose, initialTab, returnFocusTo }: S
                               ) : null}
                             </strong>
                             <span>{mcpSubtitle(view.subtitle)}</span>
+                            <small>{t(`settings.mcpForm.domain_${mcpDomainChoice(server.researchDomains)}`)}</small>
                           </div>
                           {view.managed ? (
                             <span className="mcp-preset-note">{t("settings.mcp.presetManaged")}</span>
@@ -1219,6 +1233,20 @@ export function SettingsDialog({ isOpen, onClose, initialTab, returnFocusTo }: S
                   ]}
                   value={mcpForm.type}
                 />
+              </div>
+              <div className="provider-form__field">
+                <span>{t("settings.mcpForm.domain")}</span>
+                <CustomSelect
+                  ariaLabel={t("settings.mcpForm.domain")}
+                  onChange={(value) => setMcpForm({ ...mcpForm, researchDomains: mcpDomainsForChoice(value) })}
+                  options={[
+                    { label: t("settings.mcpForm.domain_education"), value: "education" },
+                    { label: t("settings.mcpForm.domain_neuroscience"), value: "neuroscience" },
+                    { label: t("settings.mcpForm.domain_both"), value: "both" },
+                  ]}
+                  value={mcpDomainChoice(mcpForm.researchDomains)}
+                />
+                <small>{t("settings.mcpForm.domainHint")}</small>
               </div>
               {mcpForm.type === "stdio" ? (
                 <>

@@ -1,6 +1,6 @@
 /**
  * router-skill-guard — Pi extension that hard-denies access to the router skill
- * library when `skill_search` is disabled (#309).
+ * library when skill_search is disabled or profile-filtered.
  *
  * Uses Pi's `tool_call` hook (fires before tool execution) and returns
  * `{ block: true, reason }` so structured file tools (read/ls/find/grep/edit/
@@ -29,7 +29,7 @@ export interface RouterSkillGuardOpts {
   /** Agent cwd (session workspace) for resolving relative paths. */
   cwd: string;
   /**
-   * When false the extension registers nothing (skill_search is enabled).
+   * When false the extension registers nothing (unfiltered router access).
    * When true every file-tool path under `routerSkillsDir` is blocked.
    */
   enforce: boolean;

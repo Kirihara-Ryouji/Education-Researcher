@@ -75,7 +75,7 @@ interface SessionContextValue {
   /** Re-seed the trace graph from the HTTP route (manual refresh). */
   refreshTrace: (sessionId: string) => Promise<void>;
   selectSession: (sessionId: string) => void;
-  createSession: (title?: string, opts?: { providerId?: string; modelId?: string; domainResources?: DomainResources; thinkingLevel?: ThinkingLevel }) => Promise<Session | null>;
+  createSession: (title?: string, opts?: { providerId?: string; modelId?: string; domainResources?: DomainResources; researchDomain?: "education" | "neuroscience"; thinkingLevel?: ThinkingLevel }) => Promise<Session | null>;
   /**
    * Open a fresh draft conversation without persisting anything. Idempotent —
    * repeated calls collapse to the single draft state. The real session is
@@ -88,7 +88,7 @@ interface SessionContextValue {
   /** Reports whether Pi accepted the message and whether it entered the
    * in-flight follow-up queue. The composer keeps queued messages above the
    * input until their user-message SSE event confirms actual injection. */
-  sendPrompt: (content: string, opts?: { providerId?: string; modelId?: string; domainResources?: DomainResources; thinkingLevel?: ThinkingLevel }) => Promise<{ ok: boolean; queued?: boolean; messageId?: string; sessionId?: string }>;
+  sendPrompt: (content: string, opts?: { providerId?: string; modelId?: string; domainResources?: DomainResources; researchDomain?: "education" | "neuroscience"; thinkingLevel?: ThinkingLevel }) => Promise<{ ok: boolean; queued?: boolean; messageId?: string; sessionId?: string }>;
   interruptCurrent: () => Promise<void>;
   interruptSubagent: (childId: string) => Promise<boolean>;
   interruptTool: (toolCallId: string) => Promise<void>;
@@ -637,7 +637,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [disconnectSession]);
 
   const createSession = useCallback(
-    async (title = "New research session", opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; thinkingLevel?: ThinkingLevel } = {}) => {
+    async (title = "New research session", opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; researchDomain?: "education" | "neuroscience"; thinkingLevel?: ThinkingLevel } = {}) => {
       if (!currentSandbox || currentSandbox.status !== "running") {
         setError(tg("ctx.session.startSandbox"));
         return null;
@@ -687,7 +687,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   ]);
 
   const sendPrompt = useCallback(
-    async (content: string, opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; thinkingLevel?: ThinkingLevel } = {}) => {
+    async (content: string, opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; researchDomain?: "education" | "neuroscience"; thinkingLevel?: ThinkingLevel } = {}) => {
       const trimmed = content.trim();
       let targetSessionId = currentSession?.id;
       console.log(`[SessionContext] sendPrompt: "${trimmed.slice(0, 40)}...", isConnected=${isConnected}, isDraft=${isDraft}`);

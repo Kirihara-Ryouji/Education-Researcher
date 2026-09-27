@@ -23,6 +23,7 @@ import {
   type AgentStats,
   type AgentStatus,
   type DomainResources,
+  type ResearchDomain,
   type FileContent,
   type FileEntry,
   type RunStats,
@@ -70,6 +71,7 @@ import { selectFactory, isMockMode } from "./agent-factory.js";
 import {
   personaFor,
   withLanguageDirective,
+  withEducationResearchDirective,
   withoutLegacyAuditorInstructions,
   withCoreCoordinationProtocols,
   withPersistentRootDirective,
@@ -77,7 +79,7 @@ import {
 } from "./personas.js";
 import { renderAgentStatusBlock, collectAgentStatusLines } from "./extensions/agent-status.js";
 import { renderTaskListBlock } from "./extensions/task-context.js";
-import { McpBridge, loadMcpServersConfig, type McpRuntimeServerStatus, type McpRuntimeStatus } from "./mcp-bridge.js";
+import { McpBridge, loadMcpServersConfig, mcpServerAllowsDomain, type McpSystemTool, type McpServerSpec, type McpRuntimeServerStatus, type McpRuntimeStatus } from "./mcp-bridge.js";
 import {
   isSubstantiveScientificExecutionRequest,
   renderPrincipalWorkflowBlock,
@@ -106,6 +108,8 @@ import {
   withoutDomainResourceInstructions,
   withoutRouterSkillInstructions,
   resolveDomainResources,
+  resolveResearchDomain,
+  EDUCATION_ROUTER_SKILLS,
 } from "./domain-resources.js";
 import {
   AUDITOR_PLUGIN_ID,
@@ -320,6 +324,7 @@ interface SessionMeta {
   updatedAt?: string;
   lastActivityAt?: number;
   domainResources?: DomainResources;
+  researchDomain?: ResearchDomain;
   thinkingLevel?: ThinkingLevel;
   reasoningSupported?: boolean;
   workflowTaskSeqBaseline?: number;
@@ -365,6 +370,8 @@ interface SessionEntry {
   reasoningSupported: boolean;
   /** Frozen per-session domain-resource mode; never read from global state. */
   domainResources: DomainResources;
+  /** Frozen research focus; older sessions without metadata revive as neuroscience. */
+  researchDomain: ResearchDomain;
   /** Host-owned state for the current explicit-user delegation epoch. */
   workflowTaskSeqBaseline: number;
   workflowReminderClaimed: boolean;
@@ -566,9 +573,10 @@ export class SessionManager {
   // External MCP tools (§9 decision 2): shared by all non-trace agents and
   // refreshed for newly-created agents when the on-disk config changes.
   private mcpBridge: McpBridge | null;
-  private mcpTools: SystemTool[] = [];
+  private mcpTools: McpSystemTool[] = [];
+  private mcpServerSpecs: Record<string, McpServerSpec> = {};
   private mcpConfigFingerprint: string | null = null;
-  private mcpRefresh: Promise<SystemTool[]> | null = null;
+  private mcpRefresh: Promise<McpSystemTool[]> | null = null;
   private mcpStatus: McpRuntimeStatus = { state: "not_loaded", servers: [] };
 
   // Built-in skills directory, loaded through Pi's native skill pipeline
@@ -824,14 +832,14 @@ export class SessionManager {
    * re-read so Settings/plugin enable changes apply without a runtime restart;
    * existing agents retain the tool array already handed to their Pi session.
    */
-  private async ensureMcpTools(): Promise<SystemTool[]> {
+  private async ensureMcpTools(): Promise<McpSystemTool[]> {
     if (isMockMode() && !this.mcpBridge) {
       this.mcpStatus = { state: "unconfigured", servers: [] };
       return this.mcpTools;
     }
     if (this.mcpRefresh) return this.mcpRefresh;
 
-    const refresh = async (): Promise<SystemTool[]> => {
+    const refresh = async (): Promise<McpSystemTool[]> => {
       try {
         const cfg = await loadMcpServersConfig(this.dataRoot);
         const fingerprint = createHash("sha256")
@@ -844,6 +852,7 @@ export class SessionManager {
           // retain its tool closures and may still invoke those clients. New
           // agents receive the empty current generation instead.
           this.mcpTools = [];
+          this.mcpServerSpecs = {};
           this.mcpStatus = { state: "unconfigured", servers: [] };
           this.mcpConfigFingerprint = fingerprint;
           return this.mcpTools;
@@ -875,6 +884,7 @@ export class SessionManager {
           throw new Error(`Configured MCP services failed to start: ${result.failures.map(({ server, error }) => `${server}: ${error}`).join("; ")}`);
         }
         this.mcpTools = result.tools;
+        this.mcpServerSpecs = cfg.mcpServers;
         this.mcpConfigFingerprint = fingerprint;
         return this.mcpTools;
       } catch (err) {
@@ -890,6 +900,16 @@ export class SessionManager {
       this.mcpRefresh = null;
     });
     return this.mcpRefresh;
+  }
+
+  /** A tool is offered only when its originating server explicitly permits the session profile. */
+  private async mcpToolsForDomain(domain: ResearchDomain): Promise<SystemTool[]> {
+    const tools = await this.ensureMcpTools();
+    return tools.filter((tool) => {
+      if (!Object.hasOwn(this.mcpServerSpecs, tool.mcpServer)) return false;
+      const spec = this.mcpServerSpecs[tool.mcpServer];
+      return spec !== undefined && mcpServerAllowsDomain(spec, domain);
+    });
   }
 
   /** Refresh MCP if its projection changed and expose runtime-observed state. */
@@ -1428,6 +1448,7 @@ export class SessionManager {
     name: string,
     role: AgentRole,
     domainResources: DomainResources,
+    researchDomain: ResearchDomain,
     systemPlugins: readonly SystemPluginSnapshot[],
     /**
      * #309: when false, strip router / skill_search teaching from the persona
@@ -1481,7 +1502,7 @@ export class SessionManager {
         }
       }
     }
-    return persona;
+    return researchDomain === "education" ? withEducationResearchDirective(persona) : persona;
   }
 
   /* ---------------------------- session CRUD ---------------------------- */
@@ -1493,6 +1514,7 @@ export class SessionManager {
       providerId?: string;
       modelId?: string;
       domainResources?: DomainResources;
+      researchDomain?: ResearchDomain;
       thinkingLevel?: ThinkingLevel;
       reasoningSupported?: boolean;
       workflowTaskSeqBaseline?: number;
@@ -1523,6 +1545,12 @@ export class SessionManager {
             `cannot reopen it as ${input.domainResources}`,
         );
       }
+      if (input.researchDomain && input.researchDomain !== existing.researchDomain) {
+        throw new Error(
+          `session ${id} already uses researchDomain=${existing.researchDomain}; ` +
+            `cannot reopen it as ${input.researchDomain}`,
+        );
+      }
       return this.toSession(existing);
     }
     const nowIso = _restore ? _restore.updatedAt : new Date().toISOString();
@@ -1530,6 +1558,7 @@ export class SessionManager {
     const lastActivityAt = _restore ? _restore.lastActivityAt : Date.now();
     const persistBase = this.persist ? this.bpDir(id) : undefined;
     const domainResources = resolveDomainResources(input.domainResources);
+    const researchDomain = resolveResearchDomain(input.researchDomain);
     const systemPlugins = this.resolveSessionSystemPlugins(input.systemPlugins);
 
     // Provider ref: explicit input wins; otherwise reuse an existing on-disk ref
@@ -1666,6 +1695,7 @@ export class SessionManager {
       thinkingLevel,
       reasoningSupported,
       domainResources,
+      researchDomain,
       workflowTaskSeqBaseline: input.workflowTaskSeqBaseline ?? 0,
       workflowReminderClaimed: input.workflowReminderClaimed === true,
       workflowViolationEmitted: input.workflowViolationEmitted === true,
@@ -1801,6 +1831,7 @@ export class SessionManager {
           createdAt: meta.createdAt ?? "",
           updatedAt: meta.updatedAt ?? "",
           domainResources: meta.domainResources === "base" ? "base" : "full",
+          researchDomain: resolveResearchDomain(meta.researchDomain, true),
         });
       }
     }
@@ -2505,7 +2536,7 @@ export class SessionManager {
       submitTool: SystemTool;
     },
   ) {
-    const toolToggles = toolTogglesForDomainResources(entry.domainResources, await this.ensureToolToggles());
+    const toolToggles = toolTogglesForDomainResources(entry.domainResources, await this.ensureToolToggles(), entry.researchDomain);
     const childDeps: ToolDeps = {
       sessionId: entry.id,
       fromAgent: args.childId,
@@ -2518,6 +2549,7 @@ export class SessionManager {
       wakeAgent: () => {},
       requestUserInput: async () => { throw new Error("leaf subagents cannot ask the user"); },
       routerSkillsDir: this.routerSkillsDir,
+      ...(entry.researchDomain === "education" ? { routerAllowedSkills: EDUCATION_ROUTER_SKILLS } : {}),
     };
     const available = allSystemTools(childDeps, toolToggles);
     const systemTools = args.profile.systemTools
@@ -2525,7 +2557,7 @@ export class SessionManager {
       .filter((tool): tool is SystemTool => Boolean(tool));
     systemTools.push(args.submitTool);
     if (args.profile.mcp) {
-      systemTools.push(...(await this.ensureMcpTools()).filter((tool) => !SUBAGENT_FORBIDDEN_TOOL_NAMES.has(tool.name)));
+      systemTools.push(...(await this.mcpToolsForDomain(entry.researchDomain)).filter((tool) => !SUBAGENT_FORBIDDEN_TOOL_NAMES.has(tool.name)));
     }
 
     let skillPaths: string[] | undefined;
@@ -2551,11 +2583,15 @@ export class SessionManager {
       cwd: args.cwd,
       systemTools,
       allowedToolNames,
-      systemPrompt: withExecutionToolContract(withLanguageDirective(args.profile.prompt), allowedToolNames),
+      systemPrompt: withExecutionToolContract(withLanguageDirective(
+        entry.researchDomain === "education"
+          ? withEducationResearchDirective(args.profile.prompt)
+          : args.profile.prompt,
+      ), allowedToolNames),
       suppressCoordinationHooks: true,
       skillPaths,
       managedPathRoots: { cwd: args.cwd, persistentDir: join(args.cwd, ".persistent-unavailable") },
-      blockRouterSkills: !isToolEnabled(toolToggles, "skill_search"),
+      blockRouterSkills: entry.researchDomain === "education" || !isToolEnabled(toolToggles, "skill_search"),
       routerSkillsDir: this.routerSkillsDir,
       providerConfig,
       thinkingLevel: entry.thinkingLevel,
@@ -2626,6 +2662,7 @@ export class SessionManager {
       listMonitors: monitorEnabled ? () => entry.monitorManager.list(name) : undefined,
       stopMonitor: monitorEnabled ? (monitorId) => entry.monitorManager.stop(monitorId, name) : undefined,
       routerSkillsDir: this.routerSkillsDir,
+      ...(entry.researchDomain === "education" ? { routerAllowedSkills: EDUCATION_ROUTER_SKILLS } : {}),
       spawnSubagents: role === "expert" ? ({ context, tasks }) => entry.subagents.runBatch({
         parentAgent: name,
         rootRunId: entry.agents.get(name)?.state().activeRunId ?? null,
@@ -2658,11 +2695,12 @@ export class SessionManager {
     const toolToggles = toolTogglesForDomainResources(
       entry.domainResources,
       await this.ensureToolToggles(),
+      entry.researchDomain,
     );
     const skillSearchEnabled = isToolEnabled(toolToggles, "skill_search");
     const systemTools = systemToolsForRole(role, name, deps, toolToggles);
     // External MCP tools go to non-trace agents (trace agent is graph-only, §9).
-    const mcpTools = role === "trace" ? [] : await this.ensureMcpTools();
+    const mcpTools = role === "trace" ? [] : await this.mcpToolsForDomain(entry.researchDomain);
     const rawTools = [...systemTools, ...mcpTools];
     // Built-in skills are loaded by Pi natively (not as tools). Materialize the
     // generic bundled library for non-Trace roles. System plugins may still
@@ -2704,6 +2742,7 @@ export class SessionManager {
           name,
           role,
           entry.domainResources,
+          entry.researchDomain,
           entry.systemPlugins,
           skillSearchEnabled,
         ),
@@ -2722,7 +2761,7 @@ export class SessionManager {
       },
       // #309: when skill_search is off, block generic file tools from the router
       // skill directory (Pi tool_call extension). Always-on skills stay readable.
-      blockRouterSkills: !skillSearchEnabled,
+      blockRouterSkills: entry.researchDomain === "education" || !skillSearchEnabled,
       routerSkillsDir: this.routerSkillsDir,
       providerConfig,
       thinkingLevel: entry.thinkingLevel,
@@ -3621,6 +3660,7 @@ export class SessionManager {
         subagents: entry.subagents.list(),
         lastActivityTs: new Date(entry.lastActivityAt).toISOString(),
         domainResources: entry.domainResources,
+        researchDomain: entry.researchDomain,
         tokenUsage: entry.tokenUsage,
       }),
     );
@@ -3647,6 +3687,7 @@ export class SessionManager {
     subagents?: import("@brainpilot/protocol").SubagentStatus[];
     lastActivityTs: string;
     domainResources: DomainResources;
+    researchDomain: ResearchDomain;
     tokenUsage: SessionTokenUsage;
   } | undefined {
     const entry = this.sessions.get(sessionId);
@@ -3658,6 +3699,7 @@ export class SessionManager {
       subagents: entry.subagents.list(),
       lastActivityTs: new Date(entry.lastActivityAt).toISOString(),
       domainResources: entry.domainResources,
+      researchDomain: entry.researchDomain,
       tokenUsage: entry.tokenUsage,
     };
   }
@@ -4026,6 +4068,7 @@ export class SessionManager {
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
       domainResources: e.domainResources,
+      researchDomain: e.researchDomain,
       thinkingLevel: e.thinkingLevel,
       reasoningSupported: e.reasoningSupported,
       ...(e.providerRef.providerId ? { providerId: e.providerRef.providerId } : {}),
@@ -4042,6 +4085,7 @@ export class SessionManager {
       updatedAt: entry.updatedAt,
       lastActivityAt: entry.lastActivityAt,
       domainResources: entry.domainResources,
+      researchDomain: entry.researchDomain,
       thinkingLevel: entry.thinkingLevel,
       reasoningSupported: entry.reasoningSupported,
       workflowTaskSeqBaseline: entry.workflowTaskSeqBaseline,
@@ -4216,6 +4260,7 @@ export class SessionManager {
       const raw = await readFile(join(this.dataRoot, ".bp", id, "meta.json"), "utf8");
       const meta = JSON.parse(raw) as SessionMeta;
       resolveDomainResources(meta.domainResources);
+      resolveResearchDomain(meta.researchDomain, true);
       return meta;
     } catch {
       return null;
@@ -4243,6 +4288,7 @@ export class SessionManager {
           id: sid,
           title: meta.title,
           domainResources: resolveDomainResources(meta.domainResources),
+          researchDomain: resolveResearchDomain(meta.researchDomain, true),
           thinkingLevel: meta.thinkingLevel ?? "medium",
           reasoningSupported: meta.reasoningSupported,
           workflowTaskSeqBaseline:

@@ -1,12 +1,28 @@
 /** Per-session domain-resource isolation and content-free usage classification. */
 import { basename, dirname } from "node:path";
-import type { DomainResources, DomainResourceUsageValue } from "@brainpilot/protocol";
+import type { DomainResources, DomainResourceUsageValue, ResearchDomain } from "@brainpilot/protocol";
 import type { ToolToggles } from "./tool-toggles.js";
 
 export const DOMAIN_TOOL_NAMES = [
   "get_domain_knowledge_local",
   "search_papers_local",
 ] as const;
+
+/** Education uses the dedicated catalog plus methods that do not presume a neuroscience domain. */
+/** null permits a whole category; the others name only general-purpose skills. */
+export const EDUCATION_ROUTER_SKILLS: Readonly<Record<string, readonly string[] | null>> = {
+  "13_Visualization": ["nature-figure"],
+  "14_Writing": ["markdown-report-writing"],
+  "17_Literature_Databases": ["literature-search-arxiv", "literature-search-openalex"],
+  "20_Infrastructure": ["uv"],
+  "22_Education": null,
+};
+
+export function resolveResearchDomain(value: unknown, legacy = false): ResearchDomain {
+  if (value === undefined) return legacy ? "neuroscience" : "education";
+  if (value === "education" || value === "neuroscience") return value;
+  throw new Error(`invalid researchDomain: ${String(value)}`);
+}
 
 /** Only omission means the backward-compatible full mode; bad values fail. */
 export function resolveDomainResources(value: unknown): DomainResources {
@@ -19,8 +35,14 @@ export function resolveDomainResources(value: unknown): DomainResources {
 export function toolTogglesForDomainResources(
   mode: DomainResources,
   toggles: ToolToggles | null,
+  researchDomain: ResearchDomain = "neuroscience",
 ): ToolToggles | null {
-  if (mode === "full") return toggles;
+  if (mode === "full" && researchDomain === "neuroscience") return toggles;
+  if (mode === "full") return {
+    ...(toggles ?? {}),
+    get_domain_knowledge_local: false,
+    search_papers_local: false,
+  };
   return {
     ...(toggles ?? {}),
     skill_search: false,

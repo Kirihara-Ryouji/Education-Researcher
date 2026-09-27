@@ -61,6 +61,8 @@ export interface ToolDeps {
    * `bp_template/skills/` dir loaded through `additionalSkillPaths`.
    */
   routerSkillsDir: string;
+  /** Optional per-session allowlist; omitted means the complete router catalog. */
+  routerAllowedSkills?: Readonly<Record<string, readonly string[] | null>>;
   /** Present only for persistent experts that may create isolated leaf workers. */
   spawnSubagents?: (args: { context?: string; tasks: SubagentTask[] }) => Promise<SubagentResult[]>;
   startSubagents?: (args: { context?: string; tasks: SubagentTask[] }) => Promise<SubagentStatus[]>;

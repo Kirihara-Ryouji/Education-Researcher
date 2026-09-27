@@ -1,17 +1,14 @@
 /**
- * Path-boundary helpers for #309: when `skill_search` is disabled, agents must
- * not reach the router skill library (`bp_template/skills-router`) via generic
- * file tools. These pure functions feed the Pi `tool_call` guard extension and
- * are unit-tested independently of the agent loop.
+ * Path-boundary helpers for router isolation. Agents cannot use generic file
+ * tools to bypass a disabled or research-profile-filtered skill_search catalog.
  */
 import { isAbsolute, normalize, resolve, sep } from "node:path";
 
 /** Stable deny message shown to the model when a path hits the router root. */
 export function denyRouterSkillsReason(): string {
   return (
-    "Router skill library is disabled (skill_search is off). " +
-    "The long-tail skills under bp_template/skills-router are not accessible. " +
-    "Always-on Meta-Skills under bp_template/skills remain available via <available_skills> and read."
+    "Direct file access to the router skill library is disabled for this session. " +
+    "Use skill_search for permitted skills when that tool is available."
   );
 }
 

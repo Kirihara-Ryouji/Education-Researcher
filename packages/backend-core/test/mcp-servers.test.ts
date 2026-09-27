@@ -90,6 +90,33 @@ describe("MCP Servers CRUD (/api/mcp-servers)", () => {
     expect(entry.headers).toEqual({ Authorization: "Bearer t" });
   });
 
+  it("persists explicit research domains on create and update, and rejects invalid scopes", async () => {
+    const { app, dataDir } = await setup();
+    const created = await post(app, {
+      name: "education-search",
+      config: { type: "http", url: "https://example.org/mcp", researchDomains: ["education"] },
+    });
+    expect(created.status).toBe(201);
+    expect(await created.json()).toMatchObject({ researchDomains: ["education"] });
+    const changed = await put(app, "education-search", {
+      type: "http", url: "https://example.org/mcp", researchDomains: ["education", "neuroscience"],
+    });
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({ researchDomains: ["education", "neuroscience"] });
+    expect(await (await app.request("/api/mcp-servers")).json()).toEqual([
+      expect.objectContaining({ name: "education-search", researchDomains: ["education", "neuroscience"] }),
+    ]);
+    const disk = JSON.parse(await readFile(join(dataDir, "bp_template", "mcp_servers.json"), "utf8")) as {
+      mcpServers: Record<string, { researchDomains?: string[] }>;
+    };
+    expect(disk.mcpServers["education-search"].researchDomains).toEqual(["education", "neuroscience"]);
+    for (const researchDomains of [[], ["unrelated"], ["education", "education"]]) {
+      expect((await post(app, { name: "bad-scope", config: {
+        type: "stdio", command: "node", researchDomains,
+      } })).status).toBe(400);
+    }
+  });
+
   it("#204 POST with an existing name returns 409 and does not overwrite", async () => {
     const { app } = await setup();
     expect((await post(app, { name: "s", config: { type: "stdio", command: "old" } })).status).toBe(201);
@@ -215,6 +242,7 @@ describe("MCP Servers CRUD (/api/mcp-servers)", () => {
     const preset = {
       type: "http",
       url: "https://mcp.tavily.com/mcp/?tavilyApiKey=SHARED",
+      researchDomains: ["education"],
       readOnly: true,
       byok: { kind: "tavily", keyParam: "tavilyApiKey" },
     };
@@ -237,6 +265,7 @@ describe("MCP Servers CRUD (/api/mcp-servers)", () => {
         type: "http",
         url: "https://mcp.tavily.com",
         readOnly: true,
+        researchDomains: ["education"],
         byok: { kind: "tavily", keyParam: "tavilyApiKey" },
       }]);
       expect(JSON.stringify(list)).not.toContain("SHARED");

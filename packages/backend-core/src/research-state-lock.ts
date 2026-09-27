@@ -8,6 +8,13 @@ const MALFORMED_LOCK_GRACE_MS = 5_000;
 
 type LockOwner = { pid: number; token: string; createdAt: number };
 
+function isTransientWindowsLockError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  // Windows can report a short-lived sharing/delete-pending conflict as an
+  // access error while another process closes or retires the lock file.
+  return process.platform === "win32" && (code === "EPERM" || code === "EACCES" || code === "EBUSY");
+}
+
 export class ResearchStateLockError extends Error {
   constructor() {
     super("Research records are busy in another process; retry shortly");
@@ -23,27 +30,34 @@ export async function withResearchStateLock<T>(stateFile: string, action: () => 
   const deadline = Date.now() + TIMEOUT_MS;
 
   for (;;) {
+    let handle: Awaited<ReturnType<typeof open>>;
     try {
-      const handle = await open(lockPath, "wx", 0o600);
-      try {
-        await handle.writeFile(JSON.stringify(owner), "utf8");
-        await handle.sync();
-        return await action();
-      } finally {
-        await handle.close();
-        // A recovered stale lock may have been replaced. Only release ours.
-        try {
-          const current = JSON.parse(await readFile(lockPath, "utf8")) as LockOwner;
-          if (current.token === owner.token) await unlink(lockPath);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-        }
-      }
+      handle = await open(lockPath, "wx", 0o600);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      await recoverDeadOwner(lockPath);
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        await recoverDeadOwner(lockPath);
+      } else if (!isTransientWindowsLockError(error)) {
+        throw error;
+      }
       if (Date.now() >= deadline) throw new ResearchStateLockError();
       await new Promise((resolve) => setTimeout(resolve, WAIT_MS + Math.floor(Math.random() * WAIT_MS)));
+      continue;
+    }
+    // Only lock acquisition is retryable. An EPERM from the caller's action
+    // must propagate; treating it as contention could repeat a mutation.
+    try {
+      await handle.writeFile(JSON.stringify(owner), "utf8");
+      await handle.sync();
+      return await action();
+    } finally {
+      await handle.close();
+      // A recovered stale lock may have been replaced. Only release ours.
+      try {
+        const current = JSON.parse(await readFile(lockPath, "utf8")) as LockOwner;
+        if (current.token === owner.token) await unlink(lockPath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
     }
   }
 }
@@ -62,7 +76,7 @@ async function recoverDeadOwner(lockPath: string): Promise<void> {
   let recovery: Awaited<ReturnType<typeof open>>;
   try { recovery = await open(recoveryPath, "wx", 0o600); }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") return;
+    if ((error as NodeJS.ErrnoException).code === "EEXIST" || isTransientWindowsLockError(error)) return;
     throw error;
   }
   try {
@@ -81,7 +95,7 @@ async function recoverDeadOwnerWhileGuarded(lockPath: string): Promise<void> {
     ageMs = Date.now() - info.mtimeMs;
     try { owner = JSON.parse(content) as LockOwner; } catch { /* The creator may still be writing. */ }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT" || isTransientWindowsLockError(error)) return;
     throw error;
   }
   if (owner && processIsAlive(owner.pid)) return;

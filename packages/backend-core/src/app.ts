@@ -1215,6 +1215,10 @@ function toHttpMcpServer(
   };
 
   if (typeof entry.timeout === "number") safe.timeout = entry.timeout;
+  const domains = entry.researchDomains;
+  if (Array.isArray(domains) && domains.length >= 1 && domains.length <= 2
+    && domains.every((value) => value === "education" || value === "neuroscience")
+    && new Set(domains).size === domains.length) safe.researchDomains = domains;
 
   const byok = McpByokInfoSchema.safeParse(entry.byok);
   if (byok.success) safe.byok = byok.data;

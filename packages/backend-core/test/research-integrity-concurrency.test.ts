@@ -1,9 +1,29 @@
 import { mkdir, mkdtemp, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { stageResearchAsset } from "../src/research-asset-upload.js";
 import { ResearchStore } from "../src/research-store.js";
+
+const transientOpenFailure = vi.hoisted(() => ({ suffix: "", remaining: 0 }));
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const fs = await importOriginal<typeof import("node:fs/promises")>();
+  return {
+    ...fs,
+    open: async (...args: Parameters<typeof fs.open>) => {
+      if (
+        transientOpenFailure.remaining > 0 &&
+        args[1] === "wx" &&
+        String(args[0]).endsWith(transientOpenFailure.suffix)
+      ) {
+        transientOpenFailure.remaining--;
+        throw Object.assign(new Error("synthetic Windows sharing conflict"), { code: "EPERM" });
+      }
+      return Reflect.apply(fs.open, fs, args) as ReturnType<typeof fs.open>;
+    },
+  };
+});
 
 const spec = {
   title: "Research integrity study",
@@ -75,6 +95,39 @@ describe("research state and evidence integrity", () => {
     const titles = Array.from({ length: 8 }, (_, index) => `Recovered ${index}`);
     await Promise.all(titles.map((title) => new ResearchStore(root).createProject({ title })));
     expect((await new ResearchStore(root).listProjects()).map((project) => project.title).sort()).toEqual([...titles].sort());
+  });
+
+  it.skipIf(process.platform !== "win32")("retries a temporary Windows sharing conflict while opening a lock", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bp-research-lock-eperm-"));
+    transientOpenFailure.suffix = "research-v1.json.lock";
+    transientOpenFailure.remaining = 1;
+    try {
+      const store = new ResearchStore(root);
+      await store.createProject({ title: "Created after EPERM" });
+      expect(transientOpenFailure.remaining).toBe(0);
+      expect((await store.listProjects()).map((project) => project.title)).toEqual(["Created after EPERM"]);
+    } finally {
+      transientOpenFailure.remaining = 0;
+      transientOpenFailure.suffix = "";
+    }
+  });
+
+  it.skipIf(process.platform !== "win32")("retries a temporary Windows sharing conflict on the recovery guard", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bp-research-recovery-eperm-"));
+    const directory = join(root, "research");
+    await mkdir(directory);
+    await writeFile(join(directory, "research-v1.json.lock"), JSON.stringify({ pid: 999_999_999, token: "dead-owner", createdAt: Date.now() - 60_000 }));
+    transientOpenFailure.suffix = "research-v1.json.lock.recovery";
+    transientOpenFailure.remaining = 1;
+    try {
+      const store = new ResearchStore(root);
+      await store.createProject({ title: "Recovered after EPERM" });
+      expect(transientOpenFailure.remaining).toBe(0);
+      expect((await store.listProjects()).map((project) => project.title)).toEqual(["Recovered after EPERM"]);
+    } finally {
+      transientOpenFailure.remaining = 0;
+      transientOpenFailure.suffix = "";
+    }
   });
 
   it.each(fileChanges)("rejects plan and claim acceptance when a linked file is %s", async (_state, change) => {

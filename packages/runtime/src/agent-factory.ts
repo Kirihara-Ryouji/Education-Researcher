@@ -164,7 +164,7 @@ export const realAgentFactory: AgentSessionFactory = async (params) => {
       }),
     );
   }
-  // #309: when skill_search is off, hard-deny file-tool access to skills-router.
+  // Deny direct file access when the router is disabled or profile-filtered.
   if (params.blockRouterSkills && params.routerSkillsDir) {
     extensionFactories.push(
       makeRouterSkillGuardExt({

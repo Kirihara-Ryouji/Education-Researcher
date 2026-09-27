@@ -4,6 +4,15 @@ import type {
 } from "@brainpilot/protocol";
 export type { ResearchAnalysisRunStatus, ResearchTableProfile } from "@brainpilot/protocol";
 
+export interface ResearchAgentContext {
+  studyId: string;
+  planVersionId: string;
+  title: string;
+  prompt: string;
+  evidenceCount: number;
+  omittedEvidenceCount: number;
+}
+
 async function request<T>(path: string, input?: unknown): Promise<T> {
   const response = await fetch(`/api/research${path}`, {
     method: input === undefined ? "GET" : "POST",
@@ -32,6 +41,7 @@ export const researchApi = {
   getProject: (id: string) => request<{ project: ResearchProject; studies: ResearchStudy[] }>(`/projects/${encodeURIComponent(id)}`),
   createStudy: (projectId: string, input: unknown) => request<ResearchStudy>(`/projects/${encodeURIComponent(projectId)}/studies`, input),
   getStudy: (id: string) => request<ResearchStudy>(`/studies/${encodeURIComponent(id)}`),
+  getAgentContext: (id: string) => request<ResearchAgentContext>(`/studies/${encodeURIComponent(id)}/agent-context`),
   reviseStudy: (id: string, input: unknown) => request<ResearchStudy>(`/studies/${encodeURIComponent(id)}/specs`, input),
   addSource: (id: string, input: unknown) => request<ResearchStudy>(`/studies/${encodeURIComponent(id)}/sources`, input),
   uploadAsset: async (studyId: string, sourceId: string, file: File, accessNote: string): Promise<ResearchStudy> => {

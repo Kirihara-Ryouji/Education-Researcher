@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { ALWAYS_ON_CATEGORY, materializeSkills } from "../materialize-skills.js";
 import { SessionManager } from "../session-manager.js";
 import { mockAgentFactory } from "../agent-factory.js";
+import { shouldBlockToolCall } from "../router-skill-access.js";
 import type { AgentSessionFactory } from "../types.js";
 
 async function tmp(): Promise<string> {
@@ -103,6 +104,62 @@ describe("two-path skill loading", () => {
     expect(capturedRouterDir).toBe(root);
   });
 
+  it("defaults new sessions to education and limits discovery without losing general tools", async () => {
+    const root = await tmp();
+    await materializeSkills(root);
+    type Captured = Parameters<AgentSessionFactory>[0];
+    const captured: Captured[] = [];
+    const mgr = new SessionManager({
+      dataRoot: root,
+      persist: false,
+      agentFactory: async (params) => {
+        captured.push(params);
+        return mockAgentFactory(params);
+      },
+    });
+    const session = await mgr.createSession();
+    expect(session.researchDomain).toBe("education");
+    expect(mgr.getSessionState(session.id)?.researchDomain).toBe("education");
+    for (const name of ["principal", "librarian", "experimentalist", "engineer", "writer", "trace"]) {
+      await mgr.ensureAgent(session.id, name);
+    }
+    for (const params of captured) {
+      expect(params.systemPrompt).toContain("Education research focus");
+      expect(params.systemPrompt).not.toMatch(/\bEEG\b|\bfMRI\b|MNE-Python/i);
+      if (params.agentName === "trace") continue;
+      const tools = params.systemTools.map((tool) => tool.name);
+      expect(tools).not.toContain("get_domain_knowledge_local");
+      expect(tools).not.toContain("search_papers_local");
+      expect(tools).toContain("skill_search");
+      expect(params.allowedToolNames).toContain("read");
+      // File tools cannot open the unfiltered router path around skill_search.
+      expect(params.blockRouterSkills).toBe(true);
+    }
+    const principal = captured.find((item) => item.agentName === "principal")!;
+    expect(shouldBlockToolCall({
+      toolName: "read",
+      input: { path: join(root, "bp_template", "skills-router", "05_EEG_ERP") },
+      routerSkillsDir: principal.routerSkillsDir!,
+      cwd: principal.cwd,
+    })).toMatch(/Direct file access to the router skill library is disabled/);
+    const search = principal.systemTools.find((tool) => tool.name === "skill_search")!;
+    const browse = JSON.parse((await search.execute({ mode: "browse", relative_path: "" })).content[0]!.text);
+    const categories = browse.children.map((item: { name: string }) => item.name);
+    expect(categories).toContain("22_Education");
+    expect(categories).not.toContain("05_EEG_ERP");
+    expect(categories).not.toContain("02_Cross-Domain_Foundation");
+    const education = JSON.parse((await search.execute({ mode: "browse", relative_path: "22_Education" })).content[0]!.text);
+    expect(education.children.map((item: { name: string }) => item.name)).toContain("AUTHORITATIVE_SOURCES.md");
+    const sourceIndex = await search.execute({ mode: "browse", relative_path: "22_Education/AUTHORITATIVE_SOURCES.md" });
+    expect(sourceIndex.content[0]!.text).toContain("教育研究权威来源索引");
+    const neuroQuery = JSON.parse((await search.execute({ mode: "query", keywords: "EEG, fMRI" })).content[0]!.text);
+    expect(neuroQuery.total_matched).toBe(0);
+    await expect(search.execute({ mode: "browse", relative_path: "05_EEG_ERP" })).rejects.toThrow(/not available/);
+    await expect(search.execute({ mode: "query", skill_name: "cogsci-power-analysis" })).rejects.toThrow(/not found/);
+    const educationSkill = await search.execute({ mode: "query", skill_name: "education-study-design" });
+    expect(educationSkill.content[0]!.text).toContain("教育研究设计");
+  });
+
   it("trace receives only its targeted GoT skill and no skill_search", async () => {
     const root = await tmp();
     await materializeSkills(root);
@@ -148,8 +205,8 @@ describe("two-path skill loading", () => {
       persist: false,
       toolToggles: {},
     });
-    const base = await mgr.createSession({ domainResources: "base" });
-    const full = await mgr.createSession({ domainResources: "full" });
+    const base = await mgr.createSession({ domainResources: "base", researchDomain: "neuroscience" });
+    const full = await mgr.createSession({ domainResources: "full", researchDomain: "neuroscience" });
     await mgr.ensureAgent(base.id, "principal");
     await mgr.ensureAgent(full.id, "principal");
 
@@ -187,7 +244,7 @@ describe("two-path skill loading", () => {
       persist: false,
       toolToggles: { skill_search: false },
     });
-    const session = await mgr.createSession({ domainResources: "full" });
+    const session = await mgr.createSession({ domainResources: "full", researchDomain: "neuroscience" });
     await mgr.ensureAgent(session.id, "principal");
     await mgr.ensureAgent(session.id, "librarian");
 

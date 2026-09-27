@@ -28,6 +28,7 @@ import { AgUiEventSchema, TaskRecordSchema } from "./events.js";
 import {
   AgentStatusSchema,
   SessionSchema,
+  ResearchDomainSchema,
   ThinkingLevelSchema,
   SessionStateSnapshotSchema,
   SessionStatsSchema,
@@ -100,6 +101,8 @@ export const CreateSessionRequestSchema = z.object({
   modelId: z.string().optional(),
   /** Per-session domain resources; omitted means full for backward compatibility. */
   domainResources: z.enum(["full", "base"]).optional(),
+  /** New sessions default to education; choose neuroscience explicitly. */
+  researchDomain: ResearchDomainSchema.optional(),
   /** One reasoning effort shared by every agent in this session. */
   thinkingLevel: ThinkingLevelSchema.optional(),
 });

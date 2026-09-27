@@ -3,6 +3,7 @@ import { readFile, unlink } from "node:fs/promises";
 import { z, ZodError } from "zod";
 import { ResearchManualPageCreateSchema, type ResearchExecutionSnapshot, type ResearchExecutionTarget } from "@brainpilot/protocol";
 import { ResearchAssetError, stageResearchAsset } from "./research-asset-upload.js";
+import { buildResearchAgentContext } from "./research-agent-context.js";
 import { ResearchRecordError, ResearchStore } from "./research-store.js";
 import { ResearchRuntimeUnavailableError } from "./research-runtime.js";
 import { ResearchStateLockError } from "./research-state-lock.js";
@@ -81,6 +82,11 @@ export function createResearchRoutes(
     await store.createStudy(c.req.param("projectId"), await body(c), actor()), 201,
   ));
   api.get("/studies/:studyId", async (c) => c.json(await store.getStudy(c.req.param("studyId"))));
+  api.get("/studies/:studyId/agent-context", async (c) => {
+    const context = buildResearchAgentContext(await store.getStudy(c.req.param("studyId")));
+    if (!context) throw new ResearchRecordError("Accept the current plan and review outdated evidence before starting an agent session", 409);
+    return c.json(context);
+  });
   api.post("/studies/:studyId/specs", async (c) => c.json(
     await store.reviseStudy(c.req.param("studyId"), await body(c), actor()), 201,
   ));

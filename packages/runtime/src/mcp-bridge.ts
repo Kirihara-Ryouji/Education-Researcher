@@ -15,11 +15,14 @@
  *   stdio: { "fs":  { "command": "npx", "args": ["-y", "..."], "env": {} } }
  *   http:  { "api": { "type": "http", "url": "https://host/mcp", "headers": {} } }
  *   sse:   { "evt": { "type": "sse",  "url": "https://host/sse", "headers": {} } }
+ * Add `researchDomains: ["education"]` to opt a server into education sessions.
+ * Untagged legacy servers remain available only in neuroscience sessions.
  */
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { isWindows } from "./platform.js";
 import type { SystemTool, SystemToolResult } from "./types.js";
+import type { ResearchDomain } from "@brainpilot/protocol";
 import { loadCompatPluginProjections } from "./compat-hooks.js";
 
 /**
@@ -61,6 +64,26 @@ export interface McpServerSpec {
   url?: string;
   /** http/sse: extra HTTP headers (e.g. Authorization) sent on every request. */
   headers?: Record<string, string>;
+  /** Explicit research profiles allowed to use this server. Omission is legacy neuroscience-only. */
+  researchDomains?: ResearchDomain[];
+}
+
+/** The origin is captured by the bridge rather than inferred from a tool name. */
+export interface McpSystemTool extends SystemTool {
+  mcpServer: string;
+}
+
+export function mcpServerAllowsDomain(spec: McpServerSpec, domain: ResearchDomain): boolean {
+  return spec.researchDomains?.includes(domain) ?? domain === "neuroscience";
+}
+
+function validateServerDomains(name: string, spec: McpServerSpec): void {
+  if (!spec || typeof spec !== "object") throw new Error(`MCP server '${name}' must be an object`);
+  const domains = spec.researchDomains;
+  if (domains === undefined) return;
+  if (!Array.isArray(domains) || domains.length === 0 || domains.some((value) => value !== "education" && value !== "neuroscience")) {
+    throw new Error(`MCP server '${name}' has invalid researchDomains`);
+  }
 }
 
 export interface McpServersConfig {
@@ -75,7 +98,7 @@ export interface McpConnectionFailure {
 }
 
 export interface McpConnectResult {
-  tools: SystemTool[];
+  tools: McpSystemTool[];
   connectedServers: string[];
   skippedServers: string[];
   failures: McpConnectionFailure[];
@@ -191,6 +214,7 @@ export async function loadMcpServersConfig(dataRoot: string): Promise<McpServers
       serverOwners[name] = projection.id;
     }
   }
+  for (const [name, spec] of Object.entries(merged)) validateServerDomains(name, spec);
   return Object.keys(merged).length > 0 ? { mcpServers: merged, serverOwners } : null;
 }
 
@@ -270,16 +294,16 @@ export function resolveStdioCommand(cmd: string, windows: boolean): string {
 
 export class McpBridge {
   private clients: McpClientLike[] = [];
-  private _tools: SystemTool[] = [];
+  private _tools: McpSystemTool[] = [];
 
   constructor(private readonly connect: McpConnectFn = defaultMcpConnect) {}
 
-  get tools(): SystemTool[] {
+  get tools(): McpSystemTool[] {
     return this._tools;
   }
 
   /** Connect every server in the config and collect their tools. */
-  async connectAll(cfg: McpServersConfig): Promise<SystemTool[]> {
+  async connectAll(cfg: McpServersConfig): Promise<McpSystemTool[]> {
     return (await this.connectAllWithStatus(cfg)).tools;
   }
 
@@ -288,8 +312,9 @@ export class McpBridge {
     const connectedServers: string[] = [];
     const skippedServers: string[] = [];
     const failures: McpConnectionFailure[] = [];
-    const generationTools: SystemTool[] = [];
+    const generationTools: McpSystemTool[] = [];
     for (const [name, spec] of Object.entries(cfg.mcpServers)) {
+      validateServerDomains(name, spec);
       if (isPlaceholderSpec(spec)) {
         // A scaffolded slot whose url/command hasn't been filled in yet — skip
         // quietly so the default config never delays launch or logs an error.
@@ -319,8 +344,9 @@ export class McpBridge {
     return { tools: generationTools, connectedServers, skippedServers, failures };
   }
 
-  private wrap(server: string, client: McpClientLike, t: McpToolDescriptor): SystemTool {
+  private wrap(server: string, client: McpClientLike, t: McpToolDescriptor): McpSystemTool {
     return {
+      mcpServer: server,
       name: `mcp__${server}__${t.name}`,
       description: t.description ?? `MCP tool '${t.name}' from server '${server}'`,
       parameters: t.inputSchema ?? { type: "object", properties: {} },

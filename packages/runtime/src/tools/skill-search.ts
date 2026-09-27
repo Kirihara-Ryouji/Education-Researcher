@@ -35,7 +35,7 @@
  * see CLAUDE.md). The wrapping factory turns thrown errors into a tool-call
  * failure the model can react to.
  */
-import { readFile, readdir, stat, access } from "node:fs/promises";
+import { readFile, readdir, stat, access, realpath } from "node:fs/promises";
 import { constants as FS } from "node:fs";
 import { isAbsolute, join, resolve, sep, posix } from "node:path";
 import { parse as parseYaml } from "yaml";
@@ -141,15 +141,40 @@ async function listDirs(path: string): Promise<string[]> {
  * in multiple categories, descriptions are taken from the first occurrence and
  * subsequent paths are appended to `relative_paths`.
  */
-export async function collectAllSkills(base: string): Promise<SkillRecord[]> {
+export type RouterSkillAllowlist = Readonly<Record<string, readonly string[] | null>>;
+
+function skillAllowed(allowlist: RouterSkillAllowlist | undefined, category: string, skill: string): boolean {
+  if (!allowlist) return true;
+  if (!Object.hasOwn(allowlist, category)) return false;
+  const names = allowlist[category];
+  return names === null || (names?.includes(skill) ?? false);
+}
+
+/** A symlink inside an allowed skill must not lead into an excluded category. */
+async function assertAllowedPhysicalPath(base: string, target: string, category: string, skill?: string): Promise<void> {
+  const baseReal = await realpath(base);
+  const targetReal = await realpath(target);
+  const allowedRoot = skill ? join(baseReal, category, skill) : join(baseReal, category);
+  if (targetReal !== allowedRoot && !targetReal.startsWith(allowedRoot + sep)) {
+    throw new Error("path is not available in this research domain");
+  }
+}
+
+export async function collectAllSkills(base: string, allowlist?: RouterSkillAllowlist): Promise<SkillRecord[]> {
   const byName = new Map<string, SkillRecord>();
   const categories = await listDirs(base);
   for (const category of categories) {
+    if (allowlist && !Object.hasOwn(allowlist, category)) continue;
     const catPath = join(base, category);
     const skills = await listDirs(catPath);
     for (const skillName of skills) {
+      if (!skillAllowed(allowlist, category, skillName)) continue;
       const skillMd = join(catPath, skillName, "SKILL.md");
       if (!(await exists(skillMd))) continue;
+      if (allowlist) {
+        try { await assertAllowedPhysicalPath(base, skillMd, category, skillName); }
+        catch { continue; }
+      }
       // Cross-platform (#5): the relative path leaves the runtime and is
       // shown both to the model (in `relative_paths`) and round-tripped back
       // through the `browse` mode. Standardize on POSIX `/` so the API
@@ -302,7 +327,7 @@ function jsonText(value: unknown): string {
  * Pure search/browse implementation. Throws on any error path so the wrapping
  * Pi tool surfaces a real failure (matching the runtime's tool-error contract).
  */
-export async function searchSkills(base: string, args: SkillSearchArgs): Promise<string> {
+export async function searchSkills(base: string, args: SkillSearchArgs, allowlist?: RouterSkillAllowlist): Promise<string> {
   if (!(await exists(base))) {
     throw new Error(`skills router base does not exist: ${base}`);
   }
@@ -328,8 +353,10 @@ export async function searchSkills(base: string, args: SkillSearchArgs): Promise
       const cats = await listDirs(baseAbs);
       for (const skillName of names) {
         for (const cat of cats) {
+          if (!skillAllowed(allowlist, cat, skillName)) continue;
           const candidate = join(baseAbs, cat, skillName, "SKILL.md");
           if (await exists(candidate)) {
+            if (allowlist) await assertAllowedPhysicalPath(baseAbs, candidate, cat, skillName);
             return await readFile(candidate, "utf8");
           }
         }
@@ -346,7 +373,7 @@ export async function searchSkills(base: string, args: SkillSearchArgs): Promise
         "in query mode you must pass either 'keywords' (comma-separated string, e.g. \"eeg, fmri, signal preprocessing\") or 'skill_name' (exact name)",
       );
     }
-    const skills = await collectAllSkills(baseAbs);
+    const skills = await collectAllSkills(baseAbs, allowlist);
     const topk = typeof args.topk === "number" && args.topk > 0 ? Math.floor(args.topk) : 5;
     const scored = skills
       .map((skill) => ({ skill, ...scoreSkill(skill, kws) }))
@@ -377,6 +404,13 @@ export async function searchSkills(base: string, args: SkillSearchArgs): Promise
     );
   }
   const rel = String(args.relative_path).trim();
+  if (allowlist && rel !== "" && rel !== ".") {
+    const parts = rel.split(/[\\/]/);
+    const category = parts[0]!;
+    if (!Object.hasOwn(allowlist, category) || (parts.length > 1 && !skillAllowed(allowlist, category, parts[1]!))) {
+      throw new Error("path is not available in this research domain");
+    }
+  }
   let target: string;
   if (rel === "" || rel === ".") {
     target = baseAbs;
@@ -410,10 +444,20 @@ export async function searchSkills(base: string, args: SkillSearchArgs): Promise
   if (!(await exists(target))) {
     throw new Error(`path does not exist: '${args.relative_path}'`);
   }
+  if (allowlist && target !== baseAbs) {
+    const parts = rel.split(/[\\/]/);
+    await assertAllowedPhysicalPath(baseAbs, target, parts[0]!, parts.length > 1 ? parts[1] : undefined);
+  }
   const st = await stat(target);
   if (st.isDirectory()) {
     const dirents = await readdir(target, { withFileTypes: true });
     const children = dirents
+      .filter((d) => {
+        if (!allowlist) return true;
+        if (target === baseAbs) return Object.hasOwn(allowlist, d.name);
+        const relativeParts = target.slice(baseAbs.length + 1).split(sep);
+        return relativeParts.length !== 1 || skillAllowed(allowlist, relativeParts[0]!, d.name);
+      })
       .map((d) => ({
         name: d.name,
         type: d.isDirectory() ? "directory" : "file",
@@ -488,6 +532,7 @@ export function createSkillSearchTool(deps: ToolDeps): SystemTool {
       const text = await searchSkills(
         deps.routerSkillsDir,
         params as unknown as SkillSearchArgs,
+        deps.routerAllowedSkills,
       );
       return { content: [{ type: "text", text }] };
     },

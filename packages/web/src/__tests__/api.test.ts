@@ -16,6 +16,11 @@ it("normalizes the provider/model frozen on a session", () => {
   })).toMatchObject({ providerId: "provider-a", modelId: "model-a" });
 });
 
+it("keeps legacy sessions on their original neuroscience focus", () => {
+  expect(normalizeSession({ id: "legacy" }).researchDomain).toBe("neuroscience");
+  expect(normalizeSession({ id: "new", research_domain: "education" }).researchDomain).toBe("education");
+});
+
 // These exercise the real-fetch path (runtimeConfig.useMockBackend is false in
 // tests — VITE_USE_MOCK_BACKEND is unset). We stub globalThis.fetch and a
 // minimal localStorage so authHeaders()/getStoredToken() don't blow up in the
@@ -151,6 +156,14 @@ describe("structured restore errors", () => {
 });
 
 describe("api.sessions.create — unwraps the { id, session } envelope (#96)", () => {
+  it("sends an explicit research focus for a new session", async () => {
+    fetchMock.mockResolvedValueOnce(makeResponse({
+      contentType: "application/json",
+      json: { id: "education", session: { id: "education", title: "Study", researchDomain: "education" } },
+    }));
+    await expect(api.sessions.create("Study", { researchDomain: "education" })).resolves.toMatchObject({ researchDomain: "education" });
+    expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toMatchObject({ researchDomain: "education" });
+  });
   it("reads the real title from the runtime's { id, session } envelope", async () => {
     // The runtime's POST /sessions returns `{ id, session }` (server.ts), unlike
     // the GET routes which return the bare session. Before the fix the whole

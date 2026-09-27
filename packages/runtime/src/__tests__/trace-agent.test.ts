@@ -438,14 +438,16 @@ describe("Trace Agent — record_trace dispatches to a spawned trace agent", () 
     });
 
     await m.sendMessage(s.id, "go");
-    await waitFor(() => traceStatusUpdates.includes("running") && traceStatusUpdates.includes("idle"));
+    // Full Windows suites can briefly delay the asynchronous Trace delivery
+    // while other tests finish process and file cleanup.
+    await waitFor(() => traceStatusUpdates.includes("running") && traceStatusUpdates.includes("idle"), 10_000);
 
     // Order matters: must run, then settle back to idle.
     const firstRunningIdx = traceStatusUpdates.indexOf("running");
     const firstIdleAfterRunning = traceStatusUpdates.indexOf("idle", firstRunningIdx + 1);
     expect(firstRunningIdx).toBeGreaterThanOrEqual(0);
     expect(firstIdleAfterRunning).toBeGreaterThan(firstRunningIdx);
-  });
+  }, 15_000);
 
   it("trace agent's run does NOT flip the session's derived run-active flag", async () => {
     // Per session-manager.ts: the trace agent is excluded from

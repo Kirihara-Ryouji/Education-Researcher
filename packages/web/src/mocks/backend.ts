@@ -412,7 +412,7 @@ export const mockBackend = {
     return session;
   },
 
-  async createSession(title: string): Promise<Session> {
+  async createSession(title: string, researchDomain: "education" | "neuroscience" = "education"): Promise<Session> {
     await wait();
     const session = {
       id: crypto.randomUUID(),
@@ -420,6 +420,7 @@ export const mockBackend = {
       createdAt: now(),
       updatedAt: now(),
       thinkingLevel: "medium" as const,
+      researchDomain,
     };
     mockSessions = [session, ...mockSessions];
     return session;

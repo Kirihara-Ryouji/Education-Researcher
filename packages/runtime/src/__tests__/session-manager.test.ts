@@ -168,7 +168,7 @@ describe("SessionManager (mock mode)", () => {
     await mkdir(pluginRoot, { recursive: true });
     await mkdir(pluginData, { recursive: true });
     await writeFile(mcpConfigPath, JSON.stringify({
-      mcpServers: { browser: { command: "fake-browser" } },
+      mcpServers: { browser: { command: "fake-browser", researchDomains: ["education"] } },
     }));
 
     const closed = vi.fn();
@@ -229,6 +229,43 @@ describe("SessionManager (mock mode)", () => {
     expect(closed).not.toHaveBeenCalled();
     await manager.emergencySaveAll();
     expect(closed).toHaveBeenCalledOnce();
+  });
+
+  it("offers MCP tools only to the research domains named by their source servers", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bp-mcp-domain-"));
+    await mkdir(join(root, "bp_template"), { recursive: true });
+    await writeFile(join(root, "bp_template", "mcp_servers.json"), JSON.stringify({
+      mcpServers: {
+        legacy: { command: "legacy" },
+        education: { command: "education", researchDomains: ["education"] },
+        shared: { command: "shared", researchDomains: ["education", "neuroscience"] },
+      },
+    }));
+    const bridge = new McpBridge(async () => ({
+      listTools: async () => ({ tools: [{ name: "search", inputSchema: { type: "object", properties: {} } }] }),
+      callTool: async () => ({ content: [{ type: "text", text: "ok" }] }),
+      close: async () => {},
+    }));
+    const observed = new Map<string, string[]>();
+    const manager = new SessionManager({
+      dataRoot: root,
+      persist: false,
+      mcpBridge: bridge,
+      agentFactory: async (params) => {
+        observed.set(params.sessionId, params.systemTools.map((tool) => tool.name));
+        return mockAgentFactory(params);
+      },
+    });
+    const education = await manager.createSession();
+    const neuroscience = await manager.createSession({ researchDomain: "neuroscience" });
+    await manager.ensureAgent(education.id, "principal");
+    await manager.ensureAgent(neuroscience.id, "principal");
+    expect(observed.get(education.id)).toEqual(expect.arrayContaining(["mcp__education__search", "mcp__shared__search"]));
+    expect(observed.get(education.id)).not.toContain("mcp__legacy__search");
+    expect(observed.get(neuroscience.id)).toEqual(expect.arrayContaining(["mcp__legacy__search", "mcp__shared__search"]));
+    expect(observed.get(neuroscience.id)).not.toContain("mcp__education__search");
+    await manager.emergencySaveAll();
+    await rm(root, { recursive: true, force: true });
   });
 
   it("surfaces an error when every configured MCP server fails to start", async () => {

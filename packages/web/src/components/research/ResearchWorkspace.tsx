@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { staleEvidenceIds, type ResearchExecutionLinkStatus, type ResearchExecutionTarget, type ResearchProject, type ResearchStudy, type ResearchTextSegment, type ResearchTextView } from "@brainpilot/protocol";
+import { useSessions } from "../../contexts/SessionContext";
+import { draftStore } from "../../contexts/draftStore";
 import { useT } from "../../i18n/useT";
 import { analysisRunStatus, ResearchDataAnalysis } from "./ResearchDataAnalysis";
 import { executionLinkStatus, ExecutionLinkSummary, ResearchExecutionLinks } from "./ResearchExecutionLinks";
 import { ResearchReports } from "./ResearchReports";
 import { researchApi, type ResearchAnalysisRunStatus } from "./researchApi";
+import { researchHandoffReview } from "./researchHandoffReview";
 import "./research.css";
 
 const approaches = ["undecided", "literature", "quantitative", "qualitative", "mixed", "theoretical", "education_ai"] as const;
@@ -63,8 +66,9 @@ function ExtractedPassage({ segment, busy, onRecord }: {
   </li>;
 }
 
-export function ResearchWorkspace() {
+export function ResearchWorkspace({ beforeOpenSession, onOpenSession }: { beforeOpenSession: () => boolean; onOpenSession: () => void }) {
   const t = useT();
+  const { createSession, selectSession } = useSessions();
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectDetail, setProjectDetail] = useState<{ project: ResearchProject; studies: ResearchStudy[] } | null>(null);
@@ -370,11 +374,36 @@ export function ResearchWorkspace() {
 
   const currentSpec = study?.specs.at(-1);
   const latestPlan = study?.plans.at(-1);
-  const planDecision = latestPlan && study?.decisions.find((decision) => decision.target === "plan" && decision.targetId === latestPlan.id);
+  const planDecision = latestPlan && study?.decisions.slice().reverse().find((decision) => decision.target === "plan" && decision.targetId === latestPlan.id);
   const planStale = Boolean(latestPlan && currentSpec && latestPlan.specVersionId !== currentSpec.id);
   const staleEvidence = study ? staleEvidenceIds(study) : new Set<string>();
   const planEvidenceStale = Boolean(latestPlan?.evidenceIds.some((id) => staleEvidence.has(id)));
   const canLinkExecution = Boolean(latestPlan && planDecision?.decision === "accept" && !planStale && !planEvidenceStale);
+  const startAgentFromPlan = () => {
+    if (!study || !canLinkExecution || !beforeOpenSession()) return;
+    const id = study.id;
+    void run(async () => {
+      // Re-read and validate on the server. The visible study may have changed
+      // since it was fetched, and the draft must never include raw assets.
+      const context = await researchApi.getAgentContext(id);
+      const session = await createSession(context.title, { researchDomain: "education" });
+      if (!session) throw new Error(t("research.agentSessionUnavailable"));
+      draftStore.set(session.id, context.prompt);
+      researchHandoffReview.mark(session.id);
+      selectSession(session.id);
+      try {
+        applyStudy(await researchApi.addExecutionLink(id, {
+          planVersionId: context.planVersionId, sessionId: session.id,
+          target: { kind: "session" }, note: t("research.agentExecutionNote"),
+        }));
+      } catch (cause) {
+        // Keep the unsent draft in its new session so the researcher can review
+        // it and attach the execution link manually if this second write fails.
+        throw new Error(t("research.agentLinkFailed", { message: cause instanceof Error ? cause.message : String(cause) }));
+      }
+      onOpenSession();
+    });
+  };
   const addExecutionLink = (input: { planVersionId: string; sessionId: string; target: ResearchExecutionTarget; note: string }): Promise<boolean> => {
     if (!study) return Promise.resolve(false);
     return run(async () => applyStudy(await researchApi.addExecutionLink(study.id, input)));
@@ -556,6 +585,12 @@ export function ResearchWorkspace() {
               {study.evidence.length > 0 && <fieldset><legend>{t("research.supportingEvidence")}</legend>{study.evidence.map((item) => <label key={item.id}><input type="checkbox" name="evidenceIds" value={item.id} />{item.content.slice(0, 120)}</label>)}</fieldset>}
               <button disabled={busy} type="submit">{t("research.addPlan")}</button>
             </form></details>
+          </section>
+          <section className="research-workspace__card">
+            <h2>{t("research.agentHandoff")}</h2>
+            <p className="research-workspace__muted">{t("research.agentHandoffHelp")}</p>
+            <button className="research-workspace__primary-button" type="button" disabled={busy || !canLinkExecution} onClick={startAgentFromPlan}>{t("research.startEducationSession")}</button>
+            {!canLinkExecution && <p className="research-workspace__muted">{t("research.executionRequiresPlan")}</p>}
           </section>
           <ResearchExecutionLinks study={study} planVersionId={latestPlan?.id} canLink={canLinkExecution} statuses={executionStatuses} statusError={executionStatusError} busy={busy} onAdd={addExecutionLink} onRefresh={refreshExecutionStatuses} />
           <ResearchDataAnalysis key={study.id} study={study} planVersionId={latestPlan?.id} canRun={canLinkExecution} busy={busy} statuses={analysisStatuses} statusError={analysisStatusError} onMutate={mutateStudy} onRefresh={refreshAnalysisStatuses} />

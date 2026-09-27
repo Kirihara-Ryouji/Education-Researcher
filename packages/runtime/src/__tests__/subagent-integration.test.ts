@@ -1,10 +1,11 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { SessionManager } from "../session-manager.js";
 import type { AgentSessionFactory, IAgentSession, PiAgentEvent, SystemTool } from "../types.js";
 import { WorkspaceCheckpointStore } from "../workspace-checkpoints.js";
+import { McpBridge } from "../mcp-bridge.js";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 20 }))));
@@ -18,6 +19,48 @@ async function waitFor(predicate: () => boolean, timeoutMs = 5_000) {
 }
 
 describe("SessionManager subagent integration", () => {
+  it("filters MCP tools for education literature-scout leaf workers", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bp-subagent-mcp-domain-"));
+    roots.push(root);
+    await mkdir(join(root, "bp_template"), { recursive: true });
+    await writeFile(join(root, "bp_template", "mcp_servers.json"), JSON.stringify({
+      mcpServers: {
+        legacy: { command: "legacy" },
+        education: { command: "education", researchDomains: ["education"] },
+      },
+    }));
+    const bridge = new McpBridge(async () => ({
+      listTools: async () => ({ tools: [{ name: "find_source", inputSchema: { type: "object", properties: {} } }] }),
+      callTool: async () => ({ content: [{ type: "text", text: "found" }] }),
+      close: async () => {},
+    }));
+    let leafTools: string[] | undefined;
+    const factory: AgentSessionFactory = async ({ sessionId, agentName, systemTools }) => {
+      const tools = new Map(systemTools.map((tool) => [tool.name, tool]));
+      if (tools.has("submit_result")) leafTools = [...tools.keys()];
+      return {
+        sessionId,
+        isStreaming: false,
+        subscribe() { return () => {}; },
+        async prompt() {
+          if (tools.has("submit_result")) {
+            await tools.get("submit_result")!.execute({ outcome: "completed", summary: "sources checked" });
+          } else if (agentName === "librarian") {
+            await tools.get("spawn_subagent")!.execute({ tasks: [{ name: "education-sources", profile: "literature-scout", task: "Find education evidence" }] });
+          }
+        },
+        async abort() {},
+        dispose() {},
+      } satisfies IAgentSession;
+    };
+    const manager = new SessionManager({ dataRoot: root, persist: false, agentFactory: factory, mcpBridge: bridge });
+    const session = await manager.createSession();
+    await manager.sendMessage(session.id, "check sources", "librarian");
+    await waitFor(() => leafTools !== undefined);
+    expect(leafTools).toContain("mcp__education__find_source");
+    expect(leafTools).not.toContain("mcp__legacy__find_source");
+    await manager.deleteSession(session.id);
+  });
   it("destroying a parent cancels its running child and converges work state", async () => {
     const root = await mkdtemp(join(tmpdir(), "bp-subagent-destroy-parent-"));
     roots.push(root);
@@ -337,16 +380,21 @@ describe("SessionManager subagent integration", () => {
   it("lets an expert spawn a leaf child under provider concurrency=1 without deadlock", async () => {
     const root = await mkdtemp(join(tmpdir(), "bp-subagent-integration-"));
     roots.push(root);
-    const seen: Array<{ agent: string; tools: string[]; prompt: string; suppressed?: boolean }> = [];
-    const factory: AgentSessionFactory = async ({ sessionId, agentName, systemTools, allowedToolNames, suppressCoordinationHooks }) => {
+    const seen: Array<{ agent: string; tools: string[]; prompt: string; systemPrompt: string; blocked?: boolean; suppressed?: boolean }> = [];
+    const childCategories: string[][] = [];
+    const factory: AgentSessionFactory = async ({ sessionId, agentName, systemTools, allowedToolNames, systemPrompt, blockRouterSkills, suppressCoordinationHooks }) => {
       const tools = new Map(systemTools.map((tool) => [tool.name, tool]));
+      if (tools.has("submit_result")) {
+        const catalog = await tools.get("skill_search")!.execute({ mode: "browse", relative_path: "" });
+        childCategories.push(JSON.parse(catalog.content[0]!.text).children.map((item: { name: string }) => item.name));
+      }
       const listeners = new Set<(event: PiAgentEvent) => void>();
       const session: IAgentSession = {
         sessionId,
         isStreaming: false,
         subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
         async prompt(prompt) {
-          seen.push({ agent: agentName, tools: allowedToolNames, prompt, suppressed: suppressCoordinationHooks });
+          seen.push({ agent: agentName, tools: allowedToolNames, prompt, systemPrompt, blocked: blockRouterSkills, suppressed: suppressCoordinationHooks });
           const submit = tools.get("submit_result");
           if (submit) {
             await submit.execute({ outcome: "completed", summary: "child complete", findings: ["verified"] });
@@ -379,6 +427,13 @@ describe("SessionManager subagent integration", () => {
     expect(child).toMatchObject({ parentAgent: "engineer", profile: "code-runner", status: "succeeded", resultSummary: "child complete" });
     const childCall = seen.find((call) => call.agent !== "engineer");
     expect(childCall?.tools).toContain("submit_result");
+    expect(childCall?.tools).toContain("skill_search");
+    expect(childCall?.tools).not.toContain("get_domain_knowledge_local");
+    expect(childCall?.tools).not.toContain("search_papers_local");
+    expect(childCall?.systemPrompt).toContain("Education research focus");
+    expect(childCall?.blocked).toBe(true);
+    expect(childCategories).toHaveLength(2);
+    expect(childCategories[0]).not.toContain("05_EEG_ERP");
     expect(childCall?.suppressed).toBe(true);
     expect(childCall?.tools).not.toEqual(expect.arrayContaining(["spawn_subagent", "send_message", "ask_user", "record_trace"]));
     expect(children).toHaveLength(2);

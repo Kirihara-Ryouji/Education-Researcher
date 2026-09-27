@@ -2,11 +2,13 @@
   <img src="assets/banner.png" alt="BrainPilot" width="680"/>
 </p> -->
 
-<h1 align="center"><img src="assets/brand/icon_light.png" alt="BrainPilot icon" height="46" align="absmiddle"/> BrainPilot: Automating Brain Discovery<br>with Agentic Research</h1>
+<h1 align="center"><img src="assets/brand/icon_light.png" alt="BrainPilot icon" height="46" align="absmiddle"/> Education Researcher: An Education Research Workspace</h1>
 
 <p align="center">
-BrainPilot is an open-source, human-in-the-loop agentic system for brain science that brings together specialist agents, domain knowledge, skills, and tools to help researchers in all scientific stages — review literature, design studies, run analyses, draft reports, and audit scientific claims.
+This repository adapts the open-source BrainPilot platform for education research. New sessions default to education research; neuroscience remains an explicit option. Researchers can manage questions, evidence, plans, analyses, and reports while agents assist with research tasks.
 </p>
+
+> **About this fork:** The education default applies to this repository's source, not the published `@brainpilot/app` npm package or the `brainpilot.chat` hosted service. The upstream project is [NeuroAIHub/BrainPilot](https://github.com/NeuroAIHub/BrainPilot); its license and attribution are retained. Read the [education research guide](EDUCATION-RESEARCH.md) before using this fork. The release history, neuroscience case studies, and some installation instructions below describe upstream BrainPilot.
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@brainpilot/app"><img src="https://img.shields.io/npm/v/@brainpilot/app?style=flat-square&logo=npm&color=CB3837" alt="npm version"/></a>
@@ -41,7 +43,7 @@ BrainPilot is an open-source, human-in-the-loop agentic system for brain science
 
 ---
 
-## 📰 News
+## 📰 Upstream BrainPilot release history
 
 - **2026-09-08** — [BrainPilot v0.2.3](https://github.com/NeuroAIHub/BrainPilot/releases/tag/v0.2.3) expands research datasets, connects desktop data and evidence workflows, and updates bilingual guides. See the [changelog](CHANGELOG.md#023---2026-09-08).
 
@@ -57,13 +59,13 @@ BrainPilot is an open-source, human-in-the-loop agentic system for brain science
 
 ## 📖 Overview
 
-BrainPilot is an open-source AI research workspace for brain science. It helps researchers turn broad scientific questions into structured, inspectable workflows, from literature review and hypothesis refinement to experiment design, data analysis, writing, and audit. At its center, a Principal Investigator (PI) Agent communicates with the user, plans the work, and coordinates specialist agents including a librarian, experimentalist, engineer, writer, and auditor. BrainPilot is designed for human-in-the-loop scientific work: researchers remain in control, while agents handle evidence-heavy and cross-disciplinary tasks. The system integrates domain knowledge, methodological skills, and research tools, and records the process in a [Graph of Trace (GoT)](https://aclanthology.org/2026.acl-demo.29/) so that intermediate actions, evidence, claims, and potential risks can be inspected.
+Education Researcher retains BrainPilot's agent orchestration, trace, and human review while adding durable education research records. Researchers can create projects, register and verify evidence, version plans, run basic descriptive analyses, and export traceable reports. New sessions default to education prompts and method resources; neuroscience can be selected explicitly. The underlying model is supplied by the user's provider. Domain configuration does not erase pretrained knowledge or replace human verification.
 
 ### Highlights
 
-- 🧠 Built for brain science research — supports workflows across literature review, hypothesis refinement, experiment design, data analysis, writing, and audit.
+- 📚 Education research first — new sessions use education research methods and evidence by default; neuroscience resources require explicit selection.
 - 🤝 PI Agent + specialist agents — the coordinating PI works with a librarian, experimentalist, engineer, writer, and auditor.
-- 📚 Integrated domain knowledge and skills — brings together brain-science knowledge, methodological skills, analysis procedures, writing conventions, and tool interfaces.
+- 🧭 Selectable domain resources — bundled education method skills and a verified source index accompany the original optional neuroscience skills.
 - 🛡️ Auditor Agent for scientific reliability — reviews claims, evidence chains, citations, hallucination risks, omitted information, and unsupported reasoning.
 - 🔭 Traceable research process — represents each session as an inspectable [Graph of Trace](https://aclanthology.org/2026.acl-demo.29/), making task structure, agent actions, evidence flow, and decision points visible.
 - 🔌 Extensible research tool ecosystem — connects models, MCP tools, paper databases, code execution environments, and custom research utilities.
@@ -79,7 +81,7 @@ BrainPilot is an open-source AI research workspace for brain science. It helps r
 
 ---
 
-## 🧪 Selected research case studies
+## 🧪 Upstream neuroscience case studies
 
 These cases use real neuroscience data and retain the limits of the evidence.
 
@@ -114,28 +116,28 @@ These cases use real neuroscience data and retain the limits of the evidence.
 
 ## 🚀 Quick Start
 
-BrainPilot runs as a local process via **`@brainpilot/app`** — no Docker required.
-This is the recommended way to get started.
+Run this education research fork **from this repository's source**. The published `@brainpilot/app` package does not include this fork's domain selection or education skills.
 
 ### Prerequisites
 
-- **[Node.js](https://nodejs.org/en/download/)** ≥ 22
+- **[Node.js](https://nodejs.org/en/download/)** ≥ 22.13
 - A model provider **API key** — or `BP_MOCK=1` for a no-key smoke run
 
 ### 1. Install and launch
 
-```bash
-npm install -g @brainpilot/app@0.2.3
-brainpilot up
+```powershell
+npm ci
+npm run build
+npm run bp -- up
 ```
 
-Then open the local URL printed in the terminal. The `brainpilot` CLI also has a short alias:
-`bnpt`.
+Run these commands at the repository root, then open the local URL printed in the terminal. See the [education research guide](EDUCATION-RESEARCH.md) for the fork's workflow.
 
 No API key yet? Start in mock mode:
 
-```bash
-BP_MOCK=1 brainpilot up
+```powershell
+$env:BP_MOCK = '1'
+npm run bp -- up
 ```
 
 ### 2. Configure a model provider
@@ -151,8 +153,8 @@ provider; this setting does not increase a model's native context limit.
 
 Prefer initializing from the command line?
 
-```bash
-brainpilot init --api-key <key> --base-url https://your-gateway.example.com/api --model your_model_name
+```powershell
+npm run bp -- init --api-key <key> --base-url https://your-gateway.example.com/api --model your_model_name
 ```
 
 For multi-provider setups, OpenAI-compatible endpoints, custom headers, and config file
@@ -160,11 +162,11 @@ details, see **[Providers](https://brainpilot.chat/docs/providers)**.
 
 ### 3. Useful commands
 
-```bash
-brainpilot up --detach   # run in the background
-brainpilot status        # check health and child pid
-brainpilot logs          # tail backend logs
-brainpilot down          # stop the detached backend
+```powershell
+npm run bp -- up --detach   # run in the background
+npm run bp -- status        # check health and child pid
+npm run bp -- logs          # tail backend logs
+npm run bp -- down          # stop the detached backend
 ```
 
 By default, BrainPilot stores data under `./brainpilot` in the current directory. Override it
@@ -184,28 +186,23 @@ a user-id directory inside `data/`.
 For the full beginner guide, provider setup, MCP setup, and troubleshooting notes, see
 **[brainpilot.chat/docs](https://brainpilot.chat/docs)**.
 
-### Run from source (latest GitHub code)
+### Upstream BrainPilot installation
 
-Prefer the latest code straight from GitHub over the published npm package? Clone the repo,
-build, and launch:
+To use the published upstream BrainPilot release without this fork's education domain features, install the upstream npm package:
 
 ```bash
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
-npm install          # install workspace dependencies
-npm run build        # build all packages
-npm run bp -- up     # launch from source (the -- forwards flags to the CLI)
+npm install -g @brainpilot/app@0.2.3
+brainpilot up
 ```
 
-Then open the printed URL. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full dev
-workflow (ports, branch model, tests).
+The `brainpilot` CLI also has a short alias, `bnpt`. That package belongs to the [upstream project](https://github.com/NeuroAIHub/BrainPilot). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full development workflow.
 
 ### Let your agent deploy it
 
 Already working inside **Claude Code** or **OpenAI Codex**? Tell your agent:
 
 ```text
-Globally install the @brainpilot/app npm package, then run brainpilot up and give me the URL to open.
+In this repository, run npm ci, npm run build, and npm run bp -- up, then give me the URL to open.
 ```
 
 > [!TIP]
@@ -235,11 +232,7 @@ Globally install the @brainpilot/app npm package, then run brainpilot up and giv
 
 ### Built-in skills library
 
-Agents can pull in **validated domain methodology** on demand — no configuration needed.
-The built-in skills ship in the `@brainpilot/skills` content package and are loaded through
-**Pi's native skill pipeline** (separate from MCP): each skill's `name` + `description` is
-placed in the agent's system prompt, and the full `SKILL.md` body is read on demand
-(progressive disclosure). Agents can also force-load one with `/skill:<name>`.
+Agents can load **bundled method skills** when needed. They ship in the `@brainpilot/skills` content package and are loaded through Pi's skill pipeline and `skill_search` (separate from MCP). A session only discovers skills allowed for its research domain; skill bodies are read on demand. Researchers should check their guidance against the question and original sources.
 
 Skills sources:
 
@@ -250,8 +243,8 @@ Skills sources:
 
 - **Layout** — `packages/skills/skills/`, a two-level `<category>/<skill-name>/SKILL.md` tree (optional `references/` for drill-down detail).
 - **At deploy time** — **materialized into your data dir** at `<data-dir>/bp_template/skills/`, a user-editable copy; an existing skill is never overwritten.
-- **Inventory** — 72 bundled skills across 7 major research domains.
-- **Covered domains** — cellular, molecular, genetics, and pharmacology; cognitive and behavioral research; foundation and infrastructure; human neuroimaging and electrophysiology; computational modeling and theory; literature and reporting; and clinical and applied research.
+- **Inventory** — 80 `SKILL.md` files in this source tree, including 6 new education research method skills; a session only exposes skills allowed for its selected research domain.
+- **Covered domains** — education research methods, alongside the original neuroscience, foundation, literature, writing, and research-computing resources.
 
 <details>
 <summary><b>Skill categories &amp; how to add a skill</b></summary>
@@ -281,6 +274,7 @@ Existing categories under `packages/skills/skills/`:
 | `19_Pharmacology` | Drug, target, trial, and regulatory databases |
 | `20_Infrastructure` | Research-computing infrastructure |
 | `21_Electrophysiology` | Extracellular spike sorting (SpikeInterface) |
+| `22_Education` | Education evidence reviews, study design, measurement, qualitative inquiry, learning analytics, and AI evaluation |
 
 **Adding a new skill:**
 
@@ -365,8 +359,7 @@ tools you provide:
 BrainPilot now ships an end-to-end ingestion pipeline under
 [`KnowledgeBase/`](./KnowledgeBase/README.md). Open **Settings → Knowledge Base**, choose
 PDFs, prepare the local search environment, configure OCR/metadata extraction, and select
-**Prepare search**. The advanced panel shows the actual root and processing logs. After
-indexing succeeds, the agent can retrieve the papers through two built-in tools:
+**Prepare search**. The advanced panel shows the actual root and processing logs. This local knowledge base is an upstream neuroscience resource. Only sessions explicitly set to neuroscience can use its two built-in retrieval tools; education sessions use their allowed education skills and separately configured education MCP servers. After indexing succeeds, agents in neuroscience sessions can retrieve papers through:
 
 - **`get_domain_knowledge_local`** — bge-m3 embedding retrieval + bge-reranker-v2-m3 rerank
   over your local vector store.
@@ -383,6 +376,8 @@ See [`KnowledgeBase/README.md`](./KnowledgeBase/README.md) for the full pipeline
 incremental-build semantics, FAQ and offline mode.
 
 #### Per-session resource mode (advanced)
+
+New sessions default `researchDomain` to `"education"` and may explicitly select `"neuroscience"`. Legacy sessions without that field restore as neuroscience. This setting is independent of the `domainResources` evaluation switch below; both are fixed when the session starts.
 
 The Runtime session API accepts `domainResources: "full" | "base"` on
 `POST /sessions` (`full` is the backward-compatible default). A `base` session
@@ -405,6 +400,8 @@ BrainPilot can expose **Model Context Protocol** tools to agents. Configured too
 namespaced as `mcp__<server>__<tool>`. Three transports are supported: **stdio**,
 **streamable-http**, and **sse**.
 
+Each server can be assigned to education, neuroscience, or both in Settings. Older configurations without `researchDomains` remain available only to neuroscience sessions; edit a server and explicitly choose education to use it there. The upstream MCP guide linked below does not yet describe this fork-specific domain setting.
+
 > 💡 **Recommended:** [Tavily](https://www.tavily.com/) for agent web search.
 
 The easiest way to add a server is the **Settings UI** after launch: open
@@ -418,9 +415,8 @@ Prefer config files? BrainPilot reads `mcp_servers.json` from your data dir, usu
 <details>
 <summary><b>Config format &amp; all three transports</b></summary>
 
-Edit `<data-dir>/bp_template/mcp_servers.json` (global, shared by every session) or
-`<data-dir>/.bp/<session-id>/mcp_servers.json` (per session). The format is the standard
-MCP/Claude `mcpServers` map; pick a transport with `type`:
+Edit `<data-dir>/bp_template/mcp_servers.json` (preferred) or
+`<data-dir>/.bp/mcp_servers.json` (compatibility location). These are global server settings; `researchDomains` controls which new sessions receive each server's tools. The format is the standard MCP/Claude `mcpServers` map; pick a transport with `type`:
 
 ```jsonc
 {
@@ -436,6 +432,7 @@ MCP/Claude `mcpServers` map; pick a transport with `type`:
     "my-api": {
       "type": "http",
       "url": "https://your-host.example.com/mcp",
+      "researchDomains": ["education", "neuroscience"],
       "headers": { "Authorization": "Bearer <token>" }
     },
     // Remote over server-sent events:

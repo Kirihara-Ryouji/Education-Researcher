@@ -317,7 +317,7 @@ export function DesktopShell() {
       {activePage === "research" ? (
         researchAvailable === true ? (
           <Suspense fallback={<main className="plugin-market__empty" role="status">{t("research.loading")}</main>}>
-            <ResearchWorkspace />
+            <ResearchWorkspace beforeOpenSession={confirmFileNavigation} onOpenSession={() => setActivePage("workspace")} />
           </Suspense>
         ) : <main className="plugin-market__empty" role="status">{t(researchAvailable === null ? "research.loading" : "research.modeUnavailable")}</main>
       ) : activePage === "demo" ? (

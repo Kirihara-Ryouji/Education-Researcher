@@ -496,6 +496,8 @@ interface RawSession {
   updatedAt?: string;
   domain_resources?: unknown;
   domainResources?: unknown;
+  research_domain?: unknown;
+  researchDomain?: unknown;
   thinking_level?: unknown;
   thinkingLevel?: unknown;
   reasoning_supported?: unknown;
@@ -733,6 +735,9 @@ export function normalizeSession(raw: RawSession): Session {
     updatedAt: isoValue(raw.updatedAt ?? raw.updated_at ?? raw.createdAt ?? raw.created_at),
     domainResources:
       (raw.domainResources ?? raw.domain_resources) === "base" ? "base" : "full",
+    // Sessions created before research profiles existed retain their original
+    // neuroscience focus; only new sessions default to education.
+    researchDomain: (raw.researchDomain ?? raw.research_domain) === "education" ? "education" : "neuroscience",
     thinkingLevel: ["off", "low", "medium", "high"].includes(String(raw.thinkingLevel ?? raw.thinking_level))
       ? (raw.thinkingLevel ?? raw.thinking_level) as Session["thinkingLevel"]
       : "medium",
@@ -784,6 +789,10 @@ function normalizeMcpByok(rawValue: unknown): McpByokInfo | undefined {
 
 export function normalizeMcpServer(rawValue: unknown): McpServerEntry {
   const raw = asDict(rawValue);
+  const rawDomains = raw.researchDomains ?? raw.research_domains;
+  const researchDomains = Array.isArray(rawDomains)
+    ? [...new Set(rawDomains.filter((domain): domain is "education" | "neuroscience" => domain === "education" || domain === "neuroscience"))]
+    : undefined;
   return {
     name: stringValue(raw.name),
     type: raw.type === "stdio" || raw.type === "sse" ? raw.type : "http",
@@ -793,6 +802,7 @@ export function normalizeMcpServer(rawValue: unknown): McpServerEntry {
     url: optionalString(raw.url),
     headers: asOptionalRecord(raw.headers),
     timeout: optionalNumber(raw.timeout),
+    researchDomains: researchDomains?.length ? researchDomains : undefined,
     readOnly: raw.readOnly === true || raw.read_only === true ? true : undefined,
     byok: normalizeMcpByok(raw.byok),
   };

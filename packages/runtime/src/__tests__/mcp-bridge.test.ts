@@ -7,6 +7,7 @@ import {
   MCP_TOOL_CALL_TIMEOUT_MS,
   defaultMcpConnect,
   loadMcpServersConfig,
+  mcpServerAllowsDomain,
   openTransport,
   resolveStdioCommand,
   type McpClientLike,
@@ -29,10 +30,22 @@ describe("loadMcpServersConfig", () => {
     await mkdir(join(root, "bp_template"), { recursive: true });
     await writeFile(
       join(root, "bp_template", "mcp_servers.json"),
-      JSON.stringify({ mcpServers: { fs: { command: "npx", args: ["-y", "srv"] } } }),
+      JSON.stringify({ mcpServers: { fs: { command: "npx", args: ["-y", "srv"], researchDomains: ["education"] } } }),
     );
     const cfg = await loadMcpServersConfig(root);
     expect(cfg?.mcpServers.fs?.command).toBe("npx");
+    expect(cfg?.mcpServers.fs?.researchDomains).toEqual(["education"]);
+  });
+
+  it("treats untagged legacy servers as neuroscience-only and rejects invalid tags", async () => {
+    expect(mcpServerAllowsDomain({ command: "legacy" }, "education")).toBe(false);
+    expect(mcpServerAllowsDomain({ command: "legacy" }, "neuroscience")).toBe(true);
+    expect(mcpServerAllowsDomain({ command: "edu", researchDomains: ["education"] }, "education")).toBe(true);
+    expect(mcpServerAllowsDomain({ command: "edu", researchDomains: ["education"] }, "neuroscience")).toBe(false);
+    const root = await mkdtemp(join(tmpdir(), "bp-mcp-domains-"));
+    await mkdir(join(root, "bp_template"), { recursive: true });
+    await writeFile(join(root, "bp_template", "mcp_servers.json"), JSON.stringify({ mcpServers: { broken: { command: "x", researchDomains: ["invalid"] } } }));
+    await expect(loadMcpServersConfig(root)).rejects.toThrow(/invalid researchDomains/);
   });
 
   it("returns null when no config present", async () => {
@@ -48,12 +61,13 @@ describe("loadMcpServersConfig", () => {
     await mkdir(pluginRoot, { recursive: true });
     await mkdir(runtimeDir, { recursive: true });
     const mcpConfigPath = join(pluginRoot, ".mcp.json");
-    await writeFile(mcpConfigPath, JSON.stringify({ mcpServers: { memory: { command: "node", args: ["${BRAINPILOT_PLUGIN_ROOT}/server.js"], env: { CACHE_DIR: "${BRAINPILOT_PLUGIN_DATA}/cache" } } } }));
+    await writeFile(mcpConfigPath, JSON.stringify({ mcpServers: { memory: { command: "node", args: ["${BRAINPILOT_PLUGIN_ROOT}/server.js"], env: { CACHE_DIR: "${BRAINPILOT_PLUGIN_DATA}/cache" }, researchDomains: ["education"] } } }));
     await writeFile(join(runtimeDir, "demo.json"), JSON.stringify({ schemaVersion: 1, id: "demo", version: "1.0.0", format: "brainpilot", root: pluginRoot, dataDir: pluginData, mcpConfigPath }));
     const cfg = await loadMcpServersConfig(root);
     expect(cfg?.mcpServers.memory).toEqual(expect.objectContaining({
       command: "node",
       args: [`${pluginRoot}/server.js`],
+      researchDomains: ["education"],
       env: expect.objectContaining({ PLUGIN_ROOT: pluginRoot, BRAINPILOT_PLUGIN_DATA: pluginData, CACHE_DIR: `${pluginData}/cache` }),
     }));
     expect(cfg?.serverOwners).toEqual({ memory: "demo" });
@@ -82,6 +96,7 @@ describe("McpBridge", () => {
 
     expect(tools).toHaveLength(1);
     expect(tools[0]!.name).toBe("mcp__web__search");
+    expect(tools[0]!.mcpServer).toBe("web");
     const res = await tools[0]!.execute({ q: "hi" });
     // The 3rd arg is the SDK's `RequestOptions`: we override the default
     // 60 s ceiling (too short for real MCP tools) and enable progress-based

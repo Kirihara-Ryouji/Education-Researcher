@@ -757,10 +757,10 @@ export const api = {
 
     async create(
       title = "New research session",
-      opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; thinkingLevel?: ThinkingLevel } = {},
+      opts: { providerId?: string; modelId?: string; domainResources?: DomainResources; researchDomain?: "education" | "neuroscience"; thinkingLevel?: ThinkingLevel } = {},
     ): Promise<Session> {
       if (runtimeConfig.useMockBackend) {
-        return mockBackend.createSession(title);
+        return mockBackend.createSession(title, opts.researchDomain);
       }
       const raw = await handleJson<unknown>(
         await apiFetch(`${API_BASE}/sessions`, {
@@ -772,6 +772,7 @@ export const api = {
             ...(opts.providerId ? { providerId: opts.providerId } : {}),
             ...(opts.modelId ? { modelId: opts.modelId } : {}),
             ...(opts.domainResources ? { domainResources: opts.domainResources } : {}),
+            ...(opts.researchDomain ? { researchDomain: opts.researchDomain } : {}),
             ...(opts.thinkingLevel ? { thinkingLevel: opts.thinkingLevel } : {}),
           }),
         }),

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveMcpEntryView } from "../components/settings/mcpPresetView";
 import { translate } from "../i18n/translate";
-import { normalizeMcpServer, type McpByokStatus, type McpServerEntry } from "../contracts/backend";
+import { normalizeMcpServer, serializeMcpConfig, type McpByokStatus, type McpServerEntry } from "../contracts/backend";
 
 // #377 — Settings → MCP must treat hosted presets differently from a user's own
 // entries: read-only (no Edit / Delete, no raw URL) and optionally BYOK-capable.
@@ -69,6 +69,13 @@ describe("resolveMcpEntryView — read-only presets", () => {
 });
 
 describe("normalizeMcpServer — BYOK protocol constraints", () => {
+  it("preserves explicit research domains while leaving legacy entries unscoped for neuroscience compatibility", () => {
+    expect(normalizeMcpServer({ name: "education", type: "http", url: "https://example.org", researchDomains: ["education"] }).researchDomains).toEqual(["education"]);
+    expect(normalizeMcpServer({ name: "legacy", type: "stdio", command: "node" }).researchDomains).toBeUndefined();
+    expect(serializeMcpConfig({ type: "http", url: "https://example.org", researchDomains: ["education", "neuroscience"] })).toMatchObject({
+      researchDomains: ["education", "neuroscience"],
+    });
+  });
   it("trims the credential injection field", () => {
     expect(normalizeMcpServer({
       name: "tavily",

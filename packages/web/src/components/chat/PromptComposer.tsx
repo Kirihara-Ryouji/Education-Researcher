@@ -5,6 +5,7 @@ import { useSandbox } from "../../contexts/SandboxContext";
 import { DRAFT_SESSION_ID, useSessions } from "../../contexts/SessionContext";
 import { latestDurableUserTurn, useTurnTimer } from "../../contexts/useTurnTimer";
 import { draftStore } from "../../contexts/draftStore";
+import { researchHandoffReview, useResearchHandoffReview } from "../research/researchHandoffReview";
 import { writeRecoveryDraft } from "../../contexts/errorRecovery";
 import { applyMessageFilters } from "../../contexts/messageFilters";
 import { runningToastLabel } from "../../contexts/runningToast";
@@ -158,6 +159,7 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
   // active" so the no-provider banner doesn't flash during initial load.
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
+  const [researchDomain, setResearchDomain] = useState<"education" | "neuroscience">("education");
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>("medium");
   // 可用命令（已通过真实 API 测试 /context ✅ /cost ✅；/compact 由 SDK 内置 ✅）
   // 不可用命令（已移除）：/usage ❌ /clear ❌ /init ❌
@@ -197,6 +199,10 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
   const uploading = uploadState != null || queuedUploadCount > 0;
   const { currentSession, messages, isSending, error, sendPrompt, updateSessionThinking, isConnected, isDraft, startDraftSession, agents, runActive, workActive, agentFilters, interruptCurrent, interruptTool, isInterrupting, interruptingToolIds, respondToInput, messageFilters } = useSessions();
   const sessionId = currentSession?.id ?? (isDraft ? DRAFT_SESSION_ID : null);
+  const handoffNeedsReview = useResearchHandoffReview(sessionId);
+  useEffect(() => {
+    if (!isDraft) setResearchDomain("education");
+  }, [isDraft]);
   const persistedAttachmentNames = useAttachments(sessionId);
   const attachmentScopeRef = useRef<string | null>(sessionId);
   const activeTools = useMemo(
@@ -721,6 +727,7 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
     const result = await sendPrompt(`${notice}${content}`, {
       providerId: activeProvider?.id,
       modelId: selectedModel || undefined,
+      researchDomain,
       thinkingLevel: reasoningSupported ? thinkingLevel : "off",
     });
     if (result.ok && result.queued && result.messageId) {
@@ -745,6 +752,7 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
         setAttachments((prev) => (prev.length === 0 ? sentAttachments : prev));
       }
     } else {
+      if (result.sessionId) researchHandoffReview.clear(result.sessionId);
       attachmentStore.delete(sessionId);
       sentAttachments.forEach(revokeAttachmentPreview);
       for (const attachment of sentAttachments) reservedUploadNamesRef.current.delete(attachment.name);
@@ -998,8 +1006,10 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
   const retryFailedPrompt = async (prompt: string) => {
     if (!canSend || workActive?.active === true) return;
     const result = await sendPrompt(prompt, {
+      researchDomain,
       thinkingLevel: reasoningSupported ? thinkingLevel : "off",
     });
+    if (result.ok && result.sessionId) researchHandoffReview.clear(result.sessionId);
     if (!result.ok && sessionId && draftStore.get(sessionId).trim().length === 0) {
       draftStore.set(sessionId, prompt);
     }
@@ -1117,6 +1127,16 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
           />
         ) : (
         <form className="composer" aria-label={t("chat.aria.newPrompt")} onSubmit={handleSubmit}>
+          {handoffNeedsReview && <p className="composer__handoff-review" role="alert">{t("chat.researchHandoff.reviewBeforeSend")}</p>}
+          <div className="composer__research-domain">
+            {isDraft ? <label>{t("chat.researchDomain.label")}
+              <select value={researchDomain} onChange={(event) => setResearchDomain(event.target.value as "education" | "neuroscience")}>
+                <option value="education">{t("chat.researchDomain.education")}</option>
+                <option value="neuroscience">{t("chat.researchDomain.neuroscience")}</option>
+              </select>
+            </label> : <span>{t("chat.researchDomain.current", { domain: t(`chat.researchDomain.${currentSession?.researchDomain === "education" ? "education" : "neuroscience"}`) })}</span>}
+            <span className="composer__research-domain-hint">{t(isDraft ? "chat.researchDomain.newHint" : "chat.researchDomain.fixedHint")}</span>
+          </div>
           <ComposerInput
             sessionId={sessionId}
             placeholder={composerPlaceholder}

@@ -268,6 +268,49 @@ generic memory. The router is large enough that domain-validated parameters,
 paradigms, or templates almost certainly exist — generic LLM memory of those
 details is often subtly wrong.`;
 
+const EDUCATION_ROUTER_SKILL_LIBRARY = `## Router skill library (skill_search)
+
+The router catalog available in this session contains education research skills
+and general-purpose research, writing, visualization, literature-discovery, and
+infrastructure skills. Use skill_search(mode="query", keywords="education, assessment, study design")
+to discover relevant skills, then skill_search(mode="query", skill_name="<name>")
+to load a selected skill. Use skill_search(mode="browse", relative_path="22_Education")
+to inspect education resources. The <available_skills> block lists only
+always-on Meta-Skills. Neuroscience skill categories are outside this session's
+catalog; do not assume they are available.`;
+
+/** Apply education focus after loading built-in or editable on-disk personas. */
+export function withEducationResearchDirective(persona: string): string {
+  const adapted = persona
+    .replace(ROUTER_SKILL_LIBRARY, EDUCATION_ROUTER_SKILL_LIBRARY)
+    .replace(
+      'keywords="eeg, paradigm, oddball"',
+      'keywords="education, assessment, study design"',
+    )
+    .replace(
+      'for a skill matching the domain or paradigm (e.g. an EEG paradigm designer,\n   a power/sample-size guide, an fMRI task-design guide).',
+      'for a skill matching the educational question or method (e.g. a study-design,\n   measurement-validity, or qualitative-inquiry guide).',
+    )
+    .replace(
+      'Implementation skills (MNE-Python guides, fMRI GLM analysis guides, model\nbuilders)',
+      'Implementation skills (learning analytics, assessment, and research workflow guides)',
+    )
+    .replace('keywords="mne, ica, artifact removal"', 'keywords="learning analytics, assessment, privacy"');
+  return `${adapted}\n\n## Education research focus
+
+This session supports education research. Frame questions around learners,
+teaching, learning environments, assessment, equity, and educational outcomes.
+Choose methods by study design and unit of analysis; distinguish association
+from causation, validate measures, document sampling and uncertainty, and
+protect student and participant data. Use verified education sources and the
+education/general research skills available here. Do not import neuroscience
+paradigms, local brain-science knowledge, or claims about neural mechanisms
+unless the user explicitly requests that direction. If a task needs the
+neuroscience-only resources, ask the user to start a neuroscience session;
+this session's research profile cannot change. Existing custom role and
+coordination instructions still apply where compatible with this focus.`;
+}
+
 const SKILLS_FIRST_EXPERT = `## Skills-first preflight
 
 You have TWO skill libraries:
