@@ -1,10 +1,12 @@
-# @brainpilot/runtime
+# @brainpilot/runtime — Education Researcher runtime
 
-The orchestration runtime for **BrainPilot** — the open-source, single-user
-multi-agent platform built on TypeScript + the [Pi SDK](https://pi.dev). This
-package owns the agent lifecycle and is the **state authority**: a Principal
-agent coordinating specialist agents through a durable flat task ledger, exposed as a
-Hono + SSE server.
+This fork retains BrainPilot's TypeScript + [Pi SDK](https://pi.dev) orchestration
+runtime and `@brainpilot/runtime` package name. It is the **state authority**
+for a single-user research workspace: a Principal agent coordinates specialists
+through a durable task ledger, exposed through a Hono + SSE server. New sessions
+default to education research; neuroscience is an explicit option. The name on
+the npm registry still refers to the [upstream release](https://github.com/NeuroAIHub/BrainPilot),
+which does not contain this fork's education-domain behavior.
 
 It is consumed by `@brainpilot/backend-core` (which proxies to it as a stateless
 byte-passthrough) and, in hosted deployments, by the platform layer.
@@ -18,6 +20,32 @@ byte-passthrough) and, in hosted deployments, by the platform layer.
 - The Hono server (`./server`) with the SSE event stream.
 
 All wire types come from `@brainpilot/protocol` (the zod SSOT).
+
+## Research-domain contract
+
+- A new session without `researchDomain` uses `"education"`. A caller may
+  explicitly select `"neuroscience"` when starting a session. The direction is
+  frozen for that session and returned with its state.
+- A persisted older session without that field restores as neuroscience so its
+  historical prompts and resource context retain their original meaning.
+- Education sessions use an education-focused persona and the six education
+  method skills plus a small allowlist of general-purpose skills. The bundled
+  brain-science skill catalog and two local neuroscience retrieval tools
+  (`get_domain_knowledge_local`, `search_papers_local`) are unavailable to
+  education sessions. The boundary also applies to specialist agents.
+- External MCP servers must declare `researchDomains` to enter an education
+  session. A legacy server without the field stays neuroscience-only; servers
+  may explicitly allow education, neuroscience, or both. This boundary also
+  applies to specialist agents.
+- `researchDomain` is separate from the `domainResources: "full" | "base"`
+  evaluation switch. `base` disables skill search and local domain retrieval
+  for either direction; it does not select an education or neuroscience domain.
+
+These controls select prompts and tools; they do **not** erase the connected
+model's pretrained knowledge or establish the scholarly quality of its output.
+See the [education usage guide](../../EDUCATION-RESEARCH.md) and
+[acceptance cases](../../EDUCATION-EVALUATION.md) for user-visible behavior and
+validation limits.
 
 ## Bundled system plugins and ablation
 

@@ -2,8 +2,8 @@
   "id": "org.brainpilot.got",
   "version": "0.2.3",
   "apiVersion": "1",
-  "displayName": "BrainPilot Graph of Trace",
-  "description": "Research-event curation guidance for readable Graph of Trace Episodes and direct dependencies.",
+  "displayName": "Research Trace Curator",
+  "description": "Curates inspectable research decisions, evidence links, and dependencies in Graph of Trace.",
   "categories": [
     "analysis",
     "workflow",

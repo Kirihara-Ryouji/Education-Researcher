@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "BrainPilot Backend — Hono REST+SSE proxy, serve web, Orchestrator abstraction (Docker/Local)",
+  "description": "Education Researcher backend — local study APIs and BrainPilot-compatible agent orchestration",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -16,7 +16,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git",
     "directory": "packages/backend-core"
   },
   "publishConfig": {

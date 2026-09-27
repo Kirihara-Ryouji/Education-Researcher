@@ -5,8 +5,8 @@ import { RootShell } from '@/components/root-shell';
 
 export const metadata: Metadata = {
   title: {
-    default: 'BrainPilot Docs',
-    template: '%s | BrainPilot Docs',
+    default: 'Education Researcher Docs',
+    template: '%s | Education Researcher Docs',
   },
   icons: {
     icon: '/docs/favicon.svg',

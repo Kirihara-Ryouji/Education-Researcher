@@ -11,7 +11,7 @@ const program = new Command();
 
 program
   .name("bp-client")
-  .description("BrainPilot headless verification client (dev/CI)")
+  .description("Education Researcher headless session verification client (dev/CI)")
   .version("0.1.0")
   .argument("<message>", "message to send to the session")
   .option(

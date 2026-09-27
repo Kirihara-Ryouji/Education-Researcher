@@ -1,4 +1,4 @@
-# BrainPilot Knowledge Base
+# BrainPilot Local Knowledge Base (Neuroscience Profile)
 
 [English](#english) · [中文](#中文)
 
@@ -6,7 +6,7 @@
 
 ## English
 
-An end-to-end toolkit for building a **local** RAG domain knowledge base for BrainPilot. Drop your PDFs into `source/pdf/`, run the pipeline once, and the agent can immediately retrieve the indexed content through two built-in tools: `get_domain_knowledge_local` and `search_papers_local`. Embedding and reranker models run **on your own machine** — no daemon, no public port, no third-party retrieval service.
+This inherited toolkit builds a **local** RAG knowledge base for the neuroscience profile. Place PDFs in `source/pdf/` and run the pipeline to make indexed content available through `get_domain_knowledge_local` and `search_papers_local` in sessions explicitly set to neuroscience. New Education Researcher sessions default to education, where these two tools are disabled. For education methods and evidence handling, start with the [education research guide](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/EDUCATION-RESEARCH.md). Embedding and reranker models run **on your own machine** — no daemon, no public port, no third-party retrieval service.
 
 ### 1. Pipeline at a glance
 
@@ -152,7 +152,7 @@ The embedding + reranker models always run **locally** and need no key.
 
 ### 6. The two agent-facing tools
 
-After the build completes, the BrainPilot runtime automatically exposes two system tools to every non-trace agent:
+After the build completes, the runtime exposes two system tools to non-trace agents in sessions explicitly set to neuroscience. Education sessions do not receive these tools:
 
 #### `get_domain_knowledge_local(query, topk=5, min_rerank_score=0.5) -> str`
 
@@ -255,7 +255,7 @@ bge-m3 + reranker take ~2.5 GB on GPU (fp16), ~4–5 GB on CPU (fp32). The sidec
 
 ## 中文
 
-一套可端到端构建**本地** RAG 领域知识库的工具包：把你的 PDF 拖进 `source/pdf/`，跑一遍 pipeline，BrainPilot 的 agent 立刻就能通过 `get_domain_knowledge_local` 与 `search_papers_local` 两个内置工具检索这些内容。嵌入和重排序模型**都在本机运行**——不用 daemon、不开公网端口、不依赖第三方检索服务。
+这是上游保留的**脑科学会话本地 RAG 知识库**工具包：把 PDF 放入 `source/pdf/` 并运行 pipeline 后，明确选择脑科学方向的智能体可以使用 `get_domain_knowledge_local` 与 `search_papers_local` 检索。Education Researcher 的新会话默认教育研究，不提供这两个工具。教育研究的方法与证据工作流见[使用指南](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/EDUCATION-RESEARCH.md)。嵌入和重排序模型**都在本机运行**——不用 daemon、不开公网端口、不依赖第三方检索服务。
 
 ### 1. 一图理解全流程
 
@@ -400,7 +400,7 @@ python KnowledgeBase/scripts/build_kb.py --only chunk vectorize   # 只重切+�
 
 ### 6. 暴露给 agent 的两个工具
 
-构建完成后，BrainPilot runtime 会自动为所有非 trace 角色注册两个 system tool：
+构建完成后，runtime 只在明确选择脑科学研究的会话中，为非 trace 角色注册两个 system tool；教育研究会话不会收到它们：
 
 #### `get_domain_knowledge_local(query, topk=5, min_rerank_score=0.5) -> str`
 

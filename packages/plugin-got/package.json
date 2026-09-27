@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "BrainPilot built-in Graph of Trace curation plugin",
+  "description": "Education Researcher research-trace curation plugin (BrainPilot-compatible)",
   "files": [
     "manifest.json",
     "skills"
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git",
     "directory": "packages/plugin-got"
   },
   "publishConfig": {

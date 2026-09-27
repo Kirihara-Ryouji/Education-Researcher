@@ -1,13 +1,35 @@
 ---
 title: Research workspace
-description: Move from data and papers to a research draft, then inspect files and Trace evidence.
+description: Keep education research questions, sources, evidence, plans, execution, analysis, and reports reviewable.
 ---
 
-## Start from an input
+**Research projects** are the education fork's main starting point. They retain study definitions, materials, evidence, plan versions, execution links, table analysis, claims, and reports. These records help trace conclusions to inputs; they do not replace independent review of original sources and methods.
 
-In a local installation, **Plugins → Datasets** provides research data, while **Plugins → Knowledge Base → My knowledge base / Add papers** opens your local paper workflow. These entries serve different purposes: datasets become analysis inputs; indexed papers become retrieval sources.
+## Build a reviewable education study
 
-After a dataset download completes, **Use in new research** adds the selected data path to a draft. Review the path, choose a provider and model, describe the expected output, then send. Starting a draft does not run the model or the analysis. Read [Research datasets](./datasets) for access and download requirements.
+1. Create a project and study. Record the question, purpose, education level, institution type, course or task, cultural and language context, time frame, and uncertainties. Save a new version and reason when the study definition changes.
+2. Under **Sources and materials**, register publications, surveys, interviews, observations, datasets, or other materials, including provenance, citations, and access limits. Local PDF, DOCX, TXT, and MD file versions can be uploaded. Registering a source does not verify its content.
+3. Locate passages in the original material and record evidence. Keep **Unverified**, **Source checked**, and **Content checked** distinct. Recheck locators after a file update or an unverified manual transcription.
+4. Save a plan covering design, measurement, analysis, ethics, and limitations. After review, **accept the current version**. Recheck and revise the plan if the study definition or evidence changes.
+5. Link execution, analysis, and claims to the accepted plan, then build a report version from accepted, currently reviewable claims. Keep the report version and citation manifest with any downloaded Markdown report.
+
+## Hand off to an education agent
+
+Use **Execution links → Hand off to education agent → Create education session**. The app creates a new session with an **unsent draft** containing the accepted current plan and up to 12 content-checked publication excerpts with citations. It does not automatically attach raw files, CSV rows, or participant records. The study question and plan remain free text: check them for identifiable student information and decide whether citations may be sent to your chosen provider. This handoff gives the agent researcher-curated context; it does not mean the model reverified the sources.
+
+Historical sessions without a domain marker retain their neuroscience interpretation. Start a new session for education research. The domain is fixed when a session is created.
+
+## Analyze and report
+
+Under **Table data analysis**, upload a local CSV version for a registered dataset source. Accept the current plan before saving cleaning rules and running descriptive statistics. The page shows column profiles and summaries rather than copying raw rows into the display; the original CSV stays local. Version and status checks help reproducibility, but means and standard deviations alone do not establish causation or statistical significance.
+
+Link claims to evidence, analysis, or execution records and specify whether they support, challenge, or limit a claim. Reports save immutable versions from accepted claims. When a source, plan, analysis, or execution record changes, review the **Needs review** status before accepting a revised version.
+
+## Optional legacy data catalog and local paper index
+
+In a local installation, **Plugins → Datasets** still mostly lists BrainPilot's neuroscience datasets. It is optional and is not automatically loaded into education sessions. **Plugins → Knowledge Base → My knowledge base / Add papers** opens the local paper-index workflow; education sessions do not call the original local neuroscience knowledge-search tools by default. Education publications can first be registered, checked, and cited in Research projects. See [Skills and Knowledge Base](./skills-knowledge-base) for the resource boundaries.
+
+If you do need data from the original catalog, **Use in new research** adds a downloaded path to a draft. Review the domain, path, provider, model, and expected output before sending. Starting a draft does not run the model or analysis. Read [Research datasets](./datasets) for access and download requirements.
 
 ## Session files and persistent files
 
@@ -29,4 +51,4 @@ Dataset category, search, filters, detail selection, and scope are stored in the
 
 ## Local and Cloud availability
 
-The local dataset downloader and local knowledge-base setup require backend filesystem and tool access. Hosted Cloud hides these management controls. Cloud account, sandbox, and BrainPilotBench contribution features are provided by the hosted service and have their own access controls.
+The local dataset downloader and local knowledge-base setup require backend filesystem and tool access. Upstream hosted Cloud does not contain this fork's education changes and hides these local management controls. This source edition's research workspace is designed for one local user and has no account login or multi-user permission separation. Do not expose it as a shared service for sensitive student records.

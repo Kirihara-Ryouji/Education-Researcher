@@ -1,9 +1,11 @@
 ---
 title: Skills and Knowledge Base
-description: Understand BrainPilot's built-in skills and options for connecting your own research corpus.
+description: Understand education methods skills, the source index, and the boundary of local paper retrieval.
 ---
 
-BrainPilot ships with a built-in brain science skills library. Skills are not MCP servers; they are structured methodology documents that agents can discover and read when relevant.
+Education Researcher includes six education research methods skills: **evidence review, study design, measurement, qualitative inquiry, learning analytics and privacy, and education AI evaluation**. They are methodology documents available when relevant, not a newly trained model or a full-text paper corpus. The original BrainPilot neuroscience skills remain for sessions explicitly set to neuroscience; education sessions discover education and allowed general-purpose skills by default.
+
+The education skill directory's [authoritative source index](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/packages/skills/skills/22_Education/AUTHORITATIVE_SOURCES.md) links to methods, reporting, and ethics entry points. It is an **index of source links**, not a downloaded education full-text collection. Check the original text before citing any specific study result.
 
 ## Built-in Skills
 
@@ -29,7 +31,7 @@ Each skill has a `SKILL.md` file with required frontmatter:
 ---
 name: "skill-name"
 description: "A keyword-rich summary used for matching."
-domain: "brain-science"
+domain: "education-research"
 version: "1.0.0"
 ---
 ```
@@ -49,18 +51,19 @@ To contribute a built-in skill:
 npm run build -w @brainpilot/skills
 ```
 
-## Grow Your Own Skill Library
+## Extend the education skills
 
-The skills in the demo are extracted from paper and methodology libraries. You can build your own library the same way by pointing BrainPilot's tools at the papers, codebases, and methods you care about:
+Use the [six built-in education skills](https://github.com/Kirihara-Ryouji/Education-Researcher/tree/main/packages/skills/skills/22_Education) as a pattern for methods you have checked. Record the source, education level, measurement assumptions, ethics limits, and version date.
 
-- **`paper-to-skill`**: give an agent a paper, PDF, or text source and ask it to turn the method into a skill. It creates a first-draft `SKILL.md` focused on reproducible methodology.
-- **`repo-to-skill`**: give an agent a GitHub URL or local repository path. It converts the codebase into a structured skill with progressive disclosure through `references/`.
-- **Batch extraction pipeline**: for a folder of papers or transcripts, use the `pipeline/` tool in [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills). Configure the pipeline, add `.txt` or `.md` sources, set your API key, and run `python pipeline/extract.py --config pipeline/config.yaml`.
-- **Pre-built collections**: copy ready-made skills from [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills) or [`nature-skills`](https://github.com/Yuan1z0825/nature-skills) into `<data-dir>/bp_template/skills/`.
+- **`paper-to-skill`** can draft a method skill from a paper, PDF, or text; the researcher must verify source text, parameters, citations, and reuse rights.
+- **`repo-to-skill`** can structure methods from a trusted code repository; check that the code and documentation versions match.
+- Put user-edited skills under `<data-dir>/bp_template/skills/<category>/<skill-name>/SKILL.md`, then verify visibility in a new session. Education resource filtering does not automatically admit arbitrary neuroscience skills.
 
-The resulting folders should follow the normal `<category>/<skill-name>/SKILL.md` structure. Restart BrainPilot or start a new session after adding skills.
+The upstream [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills) and [`nature-skills`](https://github.com/Yuan1z0825/nature-skills) projects remain optional original-project resources; they are not an education research corpus and are not automatically used by education sessions.
 
-## Add and index your own PDFs
+## Original local paper index
+
+The following upload and indexing workflow belongs to the original BrainPilot local knowledge base. **Education sessions do not call its local neuroscience knowledge-search tools by default.** For education research, use [Research workspace](./research-workspace) to register, check, and cite publications. To search your own education corpus automatically, connect a reviewed retrieval service assigned to the education domain.
 
 Open **Settings → Knowledge Base**, or **Plugins → Knowledge Base → My knowledge base / Add papers** in a local installation.
 
@@ -75,17 +78,17 @@ npm installations materialize the bundled pipeline under `~/.brainpilot/Knowledg
 
 The local management UI is disabled in hosted Cloud. Availability of preconfigured hosted retrieval is controlled by the service.
 
-## Connect a retrieval service
+## Connect education literature retrieval
 
-BrainPilot does not ship a hosted public knowledge base inside the open-source package. Instead, connect your own retrieval services through MCP:
+The open-source package does not include a ready-to-search, full-text education paper collection. You can connect your own education literature retrieval through MCP and assign the server to **Education research**:
 
-- a vector search service over your lab's papers
-- a paper search service
-- a filesystem or database-backed retrieval tool
+- an institution-authorized education publication or policy collection
+- a paper search service that provides stable source locators and access dates
+- a filesystem or database tool restricted to authorized folders
 - an internal literature review API
 
-You can also convert important papers or methods into skills so agents have reliable methodology available without a remote retrieval service.
+Check returned summaries, excerpts, and citations against original texts. [MCP Tools](./mcp) explains domain assignment and data-access boundaries.
 
 ## Verification Reminder
 
-Some skills may be generated from papers or codebases. Verify numerical parameters, citations, and methodological assumptions before using outputs in real research.
+Education and automatically extracted skills may be incomplete. Verify numerical parameters, citations, sample and setting fit, methodological assumptions, and ethics requirements before using outputs in real research.

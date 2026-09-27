@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug! Please fill out the information below to help us investigate.
+        Thanks for reporting an Education Researcher issue. Please describe the affected research direction and use de-identified examples. Do not paste student records, API keys, or private research files.
 
   - type: textarea
     id: description
@@ -50,9 +50,9 @@ body:
     attributes:
       label: Deployment Method
       options:
-        - npm (brainpilot up)
-        - Docker (docker compose)
-        - From source (npm run bp)
+        - This repository from source (npm run bp)
+        - Docker build from this repository
+        - Upstream @brainpilot/app package
         - Other
     validations:
       required: true
@@ -60,14 +60,27 @@ body:
   - type: input
     id: version
     attributes:
-      label: BrainPilot / @brainpilot/app version
-      placeholder: e.g. 0.0.6 (run `brainpilot --version`)
+      label: Source revision or package version
+      placeholder: e.g. a Git commit SHA, or an upstream package version
+
+  - type: dropdown
+    id: research_domain
+    attributes:
+      label: Research direction
+      description: Select the session profile where the issue occurred.
+      options:
+        - Education research
+        - Neuroscience (explicitly selected)
+        - Legacy session without a profile
+        - Not session-specific
+    validations:
+      required: true
 
   - type: input
     id: node
     attributes:
       label: Node.js version
-      placeholder: e.g. v22.11.0 (run `node --version`)
+      placeholder: e.g. v22.13.0 (run `node --version`)
 
   - type: input
     id: os
@@ -79,7 +92,7 @@ body:
     id: logs
     attributes:
       label: Relevant Logs / Screenshots
-      description: Paste any error messages or logs (`brainpilot logs`, add `--runtime` for the runtime log), or attach screenshots.
+      description: Include sanitized error messages or screenshots. Remove student data, citations from private material, and credentials before posting.
       render: shell
 
   - type: textarea

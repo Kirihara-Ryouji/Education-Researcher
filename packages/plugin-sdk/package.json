@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "Stable manifest, Preview RPC, validation, and packaging SDK for BrainPilot plugins",
+  "description": "BrainPilot-compatible plugin SDK used by the Education Researcher source fork",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [

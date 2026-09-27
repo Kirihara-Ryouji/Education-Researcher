@@ -75,12 +75,12 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
 
   program
     .name("brainpilot")
-    .description("BrainPilot — Docker-free local launcher (§11A)")
+    .description("Education Researcher source-fork launcher (built on BrainPilot; run from this repository)")
     .version(requireVersion());
 
   program
     .command("up")
-    .description("Start the BrainPilot backend (+runtime) and open the UI (foreground by default; Ctrl-C to stop)")
+    .description("Start the local education research workspace and open the UI (Ctrl-C to stop)")
     .option("-d, --dir <path>", "data directory (default ./brainpilot)")
     .option("-p, --port <n>", "backend port (runtime uses port+1)", parsePort)
     .option("--detach", "run the backend as a background process")
@@ -106,7 +106,7 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
 
   program
     .command("down")
-    .description("Stop the background BrainPilot backend")
+    .description("Stop the background research workspace backend")
     .option("-d, --dir <path>", "data directory (default ./brainpilot)")
     .action(async (opts) => {
       await downFn({ dir: opts.dir });
@@ -114,7 +114,7 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
 
   program
     .command("status")
-    .description("Report whether BrainPilot is running + health/metrics")
+    .description("Report research workspace status, health, and metrics")
     .option("-d, --dir <path>", "data directory (default ./brainpilot)")
     .option("-p, --port <n>", "backend port", parsePort)
     .action(async (opts) => {
@@ -155,7 +155,7 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
 
   const plugin = program
     .command("plugin")
-    .description("Create, validate, test, and package BrainPilot plugins");
+    .description("Create, validate, test, and package BrainPilot-compatible plugins");
 
   plugin
     .command("import <directory>")

@@ -2,7 +2,7 @@ import { defineMessages } from "../types";
 
 export default defineMessages(
   {
-    "sidebar.newChat": "新对话",
+    "sidebar.newChat": "新建研究会话",
     "sidebar.plugins": "插件",
     "sidebar.automations": "自动化",
     "sidebar.demo": "Live Demo",
@@ -34,7 +34,7 @@ export default defineMessages(
     "sidebar.delete.confirmGroup": "删除对话确认：{title}",
   },
   {
-    "sidebar.newChat": "New chat",
+    "sidebar.newChat": "New research session",
     "sidebar.plugins": "Plugins",
     "sidebar.automations": "Automations",
     "sidebar.demo": "Live Demo",

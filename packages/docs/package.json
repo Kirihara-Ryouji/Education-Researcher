@@ -3,6 +3,7 @@
   "version": "0.2.3",
   "private": true,
   "type": "module",
+  "description": "Education Researcher source-fork documentation site",
   "engines": {
     "node": ">=22"
   },

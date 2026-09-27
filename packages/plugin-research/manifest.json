@@ -2,8 +2,8 @@
   "id": "org.brainpilot.research",
   "version": "0.2.3",
   "apiVersion": "1",
-  "displayName": "BrainPilot Research",
-  "description": "Canonical research evidence and data-inventory workflows for BrainPilot experts.",
+  "displayName": "Research Evidence Tools",
+  "description": "Source-grounded reports and data inventories for education research and other research sessions.",
   "categories": [
     "analysis",
     "workflow",

@@ -87,9 +87,9 @@ export async function status(
   };
 
   if (!running) {
-    log(pc.yellow("BrainPilot is not running."));
+    log(pc.yellow("Education Researcher is not running."));
   } else {
-    log(pc.green(`BrainPilot running (pid ${pid}) at ${url}`));
+    log(pc.green(`Education Researcher running (pid ${pid}) at ${url}`));
     log(`  backend port: ${report.backendPort}  runtime port: ${report.runtimePort}`);
     log(`  health: ${healthy ? pc.green("ok") : pc.red("unreachable")}`);
     if (metrics) {

@@ -1,9 +1,9 @@
 ---
 title: MCP Tools
-description: Connect stdio, HTTP, and SSE Model Context Protocol servers to BrainPilot.
+description: Assign trusted stdio, HTTP, and SSE tools to education research sessions.
 ---
 
-BrainPilot can connect agents to tools exposed through the Model Context Protocol. Configured tools appear to agents as namespaced tools such as `mcp__server_name__tool_name`.
+Education Researcher can connect agents to tools exposed through the Model Context Protocol. Configured tools have names such as `mcp__server_name__tool_name`. Education uses include literature search, authorized institutional documents, and methods tools. Check each service's data access, citation locators, and permissions; verify model-produced citations against original texts.
 
 ## Add a Server in the UI
 
@@ -12,8 +12,8 @@ BrainPilot can connect agents to tools exposed through the Model Context Protoco
 3. Click **Add Server**.
 4. Choose a transport: `stdio`, `http`, or `sse`.
 5. Fill in the transport-specific fields.
-6. Save the server.
-7. Start a new session so the tool list is refreshed.
+6. Under **Research focus**, choose **Education research**, **Neuroscience**, or **Education and neuroscience**. New servers default to education; existing unmarked configurations remain available only to neuroscience sessions.
+7. Save the server and start a new session so the tool list is refreshed.
 
 ## HTTP Server Example
 
@@ -22,6 +22,7 @@ BrainPilot can connect agents to tools exposed through the Model Context Protoco
 | Name | `paper_search` |
 | Transport | `http` |
 | URL | `https://your-mcp.example.com/mcp` |
+| Research focus | `Education research` |
 
 If the MCP endpoint needs authentication, use the headers field when available or follow the server provider's instructions.
 
@@ -40,7 +41,8 @@ Local MCP servers can be launched as child processes:
         "@modelcontextprotocol/server-filesystem",
         "/path/to/allowed/folder"
       ],
-      "env": {}
+      "env": {},
+      "researchDomains": ["education"]
     }
   }
 }
@@ -64,13 +66,15 @@ The file follows the common `mcpServers` map:
     "web_search": {
       "type": "http",
       "url": "https://your-mcp.example.com/mcp",
+      "researchDomains": ["education"],
       "headers": {
         "Authorization": "Bearer <token>"
       }
     },
     "events": {
       "type": "sse",
-      "url": "https://your-mcp.example.com/sse"
+      "url": "https://your-mcp.example.com/sse",
+      "researchDomains": ["education", "neuroscience"]
     }
   }
 }
@@ -81,4 +85,5 @@ The file follows the common `mcpServers` map:
 - Treat MCP servers like code or services you trust; agents can call their tools.
 - Do not commit API keys in MCP URLs or headers.
 - Prefer descriptive server names because they become part of the agent-facing tool namespace.
+- Research focus controls which sessions can see a server; it does not verify the quality of returned literature or how an external service handles data.
 - Restart or create a fresh session after changing MCP servers.

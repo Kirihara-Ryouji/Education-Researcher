@@ -6,8 +6,8 @@ import { i18n } from '@/lib/i18n';
 
 export const metadata: Metadata = {
   title: {
-    default: 'BrainPilot Docs',
-    template: '%s | BrainPilot Docs',
+    default: 'Education Researcher Docs',
+    template: '%s | Education Researcher Docs',
   },
   icons: {
     icon: '/docs/favicon.svg',

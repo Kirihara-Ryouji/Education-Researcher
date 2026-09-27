@@ -1,14 +1,16 @@
 ---
 title: 开发
-description: 从源码运行 BrainPilot，验证改动，并构建文档站点。
+description: 从 Education Researcher 源码运行、验证改动并构建双语文档。
 ---
 
 ## 克隆并构建
 
+本仓库的教育研究改动仅在 Education Researcher 源码中。请使用 Node.js 22.13.0 或更新版本：
+
 ```bash
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
-npm install
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
+npm ci
 npm run build
 ```
 
@@ -18,7 +20,7 @@ npm run build
 npm run bp -- up
 ```
 
-无 Key 本地运行：
+无 Key 界面冒烟测试（不用于评价模型的教育研究质量）：
 
 ```bash
 BP_MOCK=1 npm run bp -- up
@@ -57,6 +59,8 @@ npm run docs:check
 | `@brainpilot/client-cli` | 无头验证客户端 |
 | `@brainpilot/docs` | 静态公开文档站点 |
 
+包名和 CLI 命令仍保留 BrainPilot 上游命名；文档与默认研究工作流以本分支的教育研究功能为准。原上游仓库位于 [NeuroAIHub/BrainPilot](https://github.com/NeuroAIHub/BrainPilot)，已发布 npm 包不包含本分支改动。
+
 ## 文档工作流
 
 文档内容位于：
@@ -82,4 +86,4 @@ npm test -w @brainpilot/web -- src/__tests__/datasetMarketplace.test.ts src/__te
 
 后端测试包含本地 HTTP 恢复用例，不需要下载大型公开数据。单独的 `npm run test:datasets` 会下载公开文件，运行前查看脚本并核对磁盘与网络预算。
 
-中英文页面与两份 `meta*.json` 导航应保持一致。Cloud 按精确上游提交同步文档正文，在自己的 SPA 中展示；独立文档站构建通过，不代表在线副本已更新。发布时应核对两种构建和在线路由。
+中英文页面与两份 `meta*.json` 导航应保持一致。原版 BrainPilot Cloud 按上游提交同步自己的文档，**不会**因本仓库文档构建成功而变成教育研究版。发布本分支文档时，应单独核对站点构建与在线路由。

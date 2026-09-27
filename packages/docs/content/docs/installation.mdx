@@ -1,11 +1,25 @@
 ---
 title: Installation
-description: Install, update, run, and uninstall BrainPilot without surprising your local environment.
+description: Install the education fork from source and distinguish the published upstream BrainPilot package.
 ---
 
-## Recommended npm Setup
+## Install the education fork
 
-Use the published npm package for the simplest single-user setup:
+**Education Researcher must be run from this repository's source.** Install Node.js 22.13.0 or later, then run these commands from the repository root:
+
+```bash
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
+npm ci
+npm run build
+npm run bp -- up
+```
+
+Open the local URL printed in the terminal. New sessions default to education research; choose neuroscience explicitly in a new session when needed. The published upstream npm package, official container images, and hosted service do not include this fork's education changes. To update the source version, finish active work, stop the process, back up the data directory, pull the repository changes, rerun `npm ci` and `npm run build`, and restart with the same data directory.
+
+## Upstream BrainPilot npm package
+
+The following commands install the published upstream release for single-user local use. They do not install Education Researcher:
 
 ```bash
 npm install -g @brainpilot/app@0.2.3
@@ -14,7 +28,7 @@ brainpilot up
 
 The package includes the CLI, backend, runtime, web UI, and built-in skills needed for a local browser session.
 
-## Update and preserve your data
+## Update the upstream npm package and preserve your data
 
 Finish or cancel active work and stop the old process before upgrading. For detached mode, pass the same data directory used when starting it:
 
@@ -34,13 +48,13 @@ For a reproducible upgrade, replace `latest` with the approved published version
 
 To return to a previous package version, stop the service, reinstall that known working version, and restart with the retained data directory. Do not delete data or overwrite a backup as part of a package rollback. Older versions may not display newer metadata.
 
-## Uninstall
+## Uninstall the upstream npm package
 
 ```bash
 npm uninstall -g @brainpilot/app
 ```
 
-This removes the CLI package. It does not delete your BrainPilot data directory.
+This removes the upstream CLI package. It does not delete your BrainPilot data directory. A source checkout needs no global-package uninstall; stop the process when finished.
 
 ## Data Directory
 
@@ -80,9 +94,9 @@ The npm path is a local process. It does **not** create a Docker sandbox. Agents
 For stronger process isolation, use [Docker deployment](./docker) instead of the npm local
 process.
 
-## Run From Source
+## Run upstream BrainPilot from source
 
-Use source mode when you want the latest GitHub code or plan to contribute changes:
+The following commands use the original BrainPilot source and do not include Education Researcher's changes:
 
 ```bash
 git clone https://github.com/NeuroAIHub/BrainPilot.git
@@ -102,7 +116,7 @@ With `npm run`, keep the `--` separator so flags are forwarded to the BrainPilot
 
 ## Detached Mode
 
-Run BrainPilot in the background:
+The globally installed upstream BrainPilot can run in the background:
 
 ```bash
 brainpilot up --detach

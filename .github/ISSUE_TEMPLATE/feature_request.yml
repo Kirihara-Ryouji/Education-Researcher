@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting a feature! Please describe your idea below. For larger features or architecture changes, consider opening a discussion first.
+        Thanks for suggesting an Education Researcher feature. Describe the education research task, researcher decision, and evidence or privacy requirements it should support.
 
   - type: textarea
     id: problem
@@ -37,6 +37,9 @@ body:
       label: Area
       description: Which area of the project does this relate to?
       options:
+        - Education study workflow / evidence
+        - Education methods and skills
+        - Student data privacy / ethics
         - CLI / launch (brainpilot up, init)
         - Agents / orchestration (Principal, specialists, mailbox)
         - Web UI

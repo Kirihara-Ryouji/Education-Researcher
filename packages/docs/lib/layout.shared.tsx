@@ -14,7 +14,7 @@ export function baseOptions(lang?: string): BaseLayoutProps {
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
     links: [
       {
-        text: 'npm',
+        text: 'Upstream npm',
         url: 'https://www.npmjs.com/package/@brainpilot/app',
         external: true,
       },

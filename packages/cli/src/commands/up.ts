@@ -311,7 +311,7 @@ export async function up(
   if (foreground) {
     const start = deps.startServer ?? (await defaultStartServer());
     const server = await start(buildStartServerOptions(cfg));
-    log(pc.green(`BrainPilot backend running at ${pc.bold(url)}`));
+    log(pc.green(`Education Researcher backend running at ${pc.bold(url)}`));
     if (open) await maybeOpen(deps, url);
     return { config: cfg, url, server };
   }
@@ -333,7 +333,7 @@ export async function up(
     runtimePort: cfg.runtimePort,
     host: cfg.host,
   });
-  log(pc.green(`BrainPilot backend started (pid ${pid}) at ${pc.bold(url)}`));
+  log(pc.green(`Education Researcher backend started (pid ${pid}) at ${pc.bold(url)}`));
   if (open) await maybeOpen(deps, url);
   return { config: cfg, url, pid };
 }

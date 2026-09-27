@@ -1,5 +1,5 @@
 {
-  "//": "BrainPilot custom model providers — copy to your data dir and point BP_MODELS_JSON at it.",
+  "//": "Education Researcher source-fork model providers (BrainPilot-compatible) — copy to your data dir and point BP_MODELS_JSON at it.",
   "//how": "Set in .env:  BP_MODELS_JSON=./brainpilot/models.json  ANTHROPIC_MODEL=<id>  ANTHROPIC_API_KEY=<key>",
   "//provider": "By default the FIRST provider below is used. Set BP_MODEL_PROVIDER=<name> to pick another.",
   "//keys": "apiKey supports $ENV interpolation — e.g. \"$ANTHROPIC_API_KEY\" reads the env var at request time. Never inline secrets here if this file is committed.",

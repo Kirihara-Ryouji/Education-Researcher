@@ -1,161 +1,80 @@
 ---
 title: 快速上手
-description: 安装 BrainPilot、连接模型服务商、运行首个任务并检查结果。
+description: 从源码启动 Education Researcher，配置模型并完成可复核的教育研究任务。
 ---
 
-本页介绍上游已发布的 BrainPilot 安装流程。此仓库的 **Education Researcher 教育研究版**新增教育默认领域，需要从[本仓库源码](https://github.com/Kirihara-Ryouji/Education-Researcher)安装；已发布的 `@brainpilot/app@0.2.3` 和托管网站不包含本分支改动。教育版的使用与边界见[教育研究版使用指南](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/BrainPilot-main/EDUCATION-RESEARCH.md)。
+**Education Researcher** 基于开源 BrainPilot，面向教育学研究。新会话默认选择**教育研究**；需要原有脑科学能力时，可以在新会话中主动选择**脑科学研究**。研究方向影响提示词和可调用的内置资源，不会删除底层模型已有的知识。
 
-BrainPilot 原项目是一个面向脑科学研究的开源、人在回路智能体工作台。它运行在你的电脑或服务器上，通过浏览器使用，可以协调专业智能体、领域技能、模型服务商、文件和外部工具。
+教育版须从[本仓库源码](https://github.com/Kirihara-Ryouji/Education-Researcher)运行。上游发布的 `@brainpilot/app@0.2.3`、官方沙箱镜像和 `brainpilot.chat` 托管服务不包含本分支的教育研究改动。
 
-本指南会带你从全新安装走到一个小型、可复核的任务。如果 Node.js 和模型服务商 key 已经准备好，整个过程大约需要五分钟。
+> **研究数据：**先用虚构或去标识化的示例熟悉流程。真实学生资料须遵守机构的伦理、授权、知情同意和数据管理要求；不要把可识别资料或密钥直接发送给外部模型。
 
-> **开始之前：**不要上传可识别的受试者数据、原始临床记录、密码、API key 或其他机密材料。请先对研究数据进行去标识化，并遵守所在机构的伦理审批、知情同意和数据管理要求。
+## 1. 从源码启动
 
-## 1. 检查环境要求
-
-你需要：
-
-- **Node.js 22 或更高版本**
-- **npm**，随 Node.js 一起安装
-- 一个模型服务商 API key；也可以先使用无 key 的 mock 模式
-
-检查 Node.js 版本：
+准备 **Node.js 22.13.0 或更新版本**及 npm。克隆仓库后进入应用根目录：
 
 ```bash
-node -v
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
+npm ci
+npm run build
+npm run bp -- up
 ```
 
-如果结果低于 `v22`，请先安装更新的 Node.js 版本。
+在浏览器打开终端显示的本地地址。前台进程可按 `Ctrl-C` 停止。通过 `npm run` 使用 CLI 时，`--` 分隔符必须保留。安装、数据目录与更新说明见[安装与更新](./installation)。
 
-## 2. 安装并启动 BrainPilot
+若只想检查界面和流程，可使用无密钥 mock 模式；其回复不能用于评价教育研究能力：
 
-全局安装已经发布的 npm 包，然后启动：
-
-```bash
-npm install -g @brainpilot/app@0.2.3
-brainpilot up
+```bash title="macOS / Linux"
+BP_MOCK=1 npm run bp -- up
 ```
 
-在浏览器中打开终端打印的本地地址。进程默认在前台运行；按 `Ctrl-C` 可以停止。`bnpt` 是同一个命令的短别名。
-
-如果想在添加真实 key 之前验证安装，可以使用 mock 模式：
-
-```bash
-BP_MOCK=1 brainpilot up
+```powershell title="PowerShell"
+$env:BP_MOCK = '1'
+npm run bp -- up
 ```
 
-Mock 模式只用于产品冒烟测试，不能为真实研究任务提供模型能力。
+## 2. 配置模型服务商
 
-## 3. 配置并测试模型服务商
+真实任务需要你自己的模型服务商。在 **Settings → Providers（服务商）→ Add Provider（添加服务商）** 填写服务商名称、API 根地址、端点协议、密钥及准确的模型 ID。协议应与端点实际格式一致，不能仅凭模型名称判断。
 
-打开 **Settings → Providers（服务商）→ Add Provider（添加服务商）**，根据服务商官方文档填写：
+保存后点 **Use（使用）** 设为新会话默认服务商，再点 **Test（测试）** 发起一次最小真实请求。测试可能消耗少量额度。密钥只填在本机设置中，不要放进聊天、截图或仓库。各协议与配置路径见[模型服务商](./providers)。
 
-| 字段 | 应填写的内容 |
-| --- | --- |
-| Provider name | 便于自己识别连接的本地名称 |
-| Base URL | 服务商 API 根地址 |
-| Protocol | 该端点实际提供的请求格式 |
-| API key | 服务商签发的秘密凭证 |
-| Models | 服务商接受的准确模型或 deployment ID |
+## 3. 完成第一个教育研究任务
 
-应根据端点行为选择协议，不要根据模型名称猜测：
+点**新建会话**，确认“研究方向”为**教育研究（默认）**，并确认模型。可以从容易人工核验的小任务开始：
 
-| 端点行为 | BrainPilot 协议 |
-| --- | --- |
-| 兼容 Anthropic `/messages` | `Anthropic Messages` |
-| 兼容 OpenAI chat/completions | `OpenAI Completions` |
-| OpenAI Responses API | `OpenAI Responses` |
-| Azure 托管的 Responses API | `Azure OpenAI Responses` |
+> 请为“初中数学课中的形成性反馈是否改善学生的问题解决表现”拟一页研究方案。列出研究问题、可选设计、干预与结果测量、可能的混杂因素、伦理注意点及待查证的证据。不要编造论文、效应量或已有数据。
 
-保存后：
+写清研究情境、方法约束、预期产物和需要人工审阅的决定。智能体提供的是辅助分析；引用、测量效度、统计假设与教育解释仍需研究者逐项核对。想保留更完整的来源、方案及版本记录，可使用[研究工作区](./research-workspace)。
 
-1. 点击 **Use（使用）**，将该服务商设为新会话的默认服务商。
-2. 点击 **Test（测试）**，通过所选协议和第一个已配置模型发送一次最小真实请求。
-3. 确认服务商返回健康结果。测试可能消耗少量服务商额度。
+## 4. 从研究工作区交接方案
 
-![在 BrainPilot 中添加并测试模型服务商](/images/guide/provider-setup.gif)
+在**研究项目**中新建项目与研究，填写研究问题、学段、课程、机构与待确定事项。登记来源及证据，核对原始材料，再保存并**接受当前研究方案**。
 
-动画使用的是特意设置的虚假地址和 key。不要把秘密信息复制到 Prompt、截图、反馈消息或代码仓库中。CLI 配置、协议细节和配置文件位置请参阅[模型服务商](https://brainpilot.chat/docs/zh-cn/providers)。
+随后在**执行关联 → 交给教育研究智能体**创建新教育会话。工作台只把已接受的当前方案和符合条件、带引文的出版物摘录写入**尚未发送的草稿**。原始文件、表格行和参与者记录不会自动附上；自由文本中仍可能含个人信息，所以发送前必须检查草稿。交接不代表模型独立核实了来源。
 
-## 4. 运行一个小型首个任务
+## 5. 核对结果
 
-先使用成本较低、结果容易核验的请求：
+在**对话、文件、智能体和轨迹**中查看请求、工具调用、生成产物及结论依据。至少检查：
 
-1. 点击 **New chat（新建会话）**。
-2. 确认消息框旁边显示的模型。
-3. 写清目标、期望输出，以及需要人工批准的步骤。
-4. 发送请求，并在会话启动时保持页面打开。
+- 引用的论文是否真实存在，原文是否支持相应论断；
+- 样本、变量、测量、缺失值与排除规则是否写清；
+- 数值是否能从保存的文件与代码复算；
+- 因果解释是否受到设计支持，哪些结论仍需人工判断。
 
-可以尝试这个例子：
+原有**插件 → 数据集**目录以脑科学数据为主，是可选资源；教育会话不会自动加载这些数据。上传教育论文全文并索引的本地知识库与教育会话的默认资源边界见[技能与知识库](./skills-knowledge-base)。
 
-> 为 fMRI 分析方案制作一份简短的复核清单。指出每项需要人工确认的假设。不要实际执行分析，也不要虚构缺失的研究信息。
-
-![创建第一个 BrainPilot 任务](/images/guide/first-task.gif)
-
-在真实任务中，一个有效请求通常包含五部分：
-
-1. **目标**——需要做出的决定、分析或产物。
-2. **数据与背景**——格式、规模、研究背景和已知局限。
-3. **方法约束**——必须使用或禁止使用的方法、参数和验证规则。
-4. **交付物**——代码、图、表格、报告、日志或机器可读结果。
-5. **复核节点**——智能体必须解释或暂停等待批准的选择。
-
-## 5. 检查工作过程，而不只看最终答案
-
-BrainPilot 让工作过程可以检查，但不保证科学结论正确。在依赖结果之前，请检查：
-
-- **Chat（对话）**——请求、澄清、中间决策和最终回复。
-- **Files（文件）**——上传的输入、生成的代码、图、表格、报告和日志。
-- **Agents（智能体）**——参与了哪些专业角色，以及它们的职责有何区别。
-- **Trace（轨迹）**——重要步骤、工具调用、输出和产物。
-
-对于研究任务，至少核验：
-
-- 实际使用的输入文件、shape、单位、排除规则和缺失值；
-- 每个重要数值背后的代码和保存产物；
-- 统计假设与训练/测试划分；
-- 引用与原始来源是否一致；
-- 哪些结论仍需要人工判断或独立复现。
-
-公开的[演示案例](https://brainpilot.chat/demos)提供了已经完成的运行记录，无需上传自己的数据即可检查。
-
-![检查一次完整运行及其 Trace](/images/guide/inspect-trace.gif)
-
-## 6. 确认首次运行健康
-
-满足以下条件后，再开始更大的任务：
-
-- 服务商已经保存、启用并通过 **Test（测试）**；
-- 新会话显示预期的服务商和模型；
-- 任务完成时没有服务商、鉴权或运行环境错误；
-- 可以从会话列表重新打开该任务；
-- 可以检查它的 Trace 和生成文件。
-
-确认这些项目后，再使用更大的文件、更长的任务或费用更高的模型。
-
-## 首次运行常见问题
+## 常见问题
 
 | 现象 | 优先检查 |
 | --- | --- |
-| `brainpilot: command not found` | 确认 npm 全局安装和 npm 二进制目录 |
-| Node.js 版本错误 | 安装 Node.js 22 或更高版本 |
-| 端口被占用 | 运行 `brainpilot up --port 9010` |
-| 服务商返回 401/403 | 重新检查 key 以及账户/模型权限 |
-| 服务商返回 404 | 对照官方文档检查 Base URL、协议和 Model ID |
-| 服务商返回 429/额度错误 | 等待、减少调用或补充服务商额度 |
-| 修改服务商后当前会话没有变化 | 点击 **Use（使用）** 后新建会话 |
-| MCP 工具没有出现 | 检查传输方式和鉴权，然后新建会话 |
+| 启动失败 | Node.js 是否至少为 22.13.0、是否位于 `Education-Researcher` 仓库根目录、是否已运行 `npm ci` 与 `npm run build` |
+| 端口被占用 | 运行 `npm run bp -- up --port 9010` |
+| 服务商返回 401/403/404 | 核对密钥、权限、API 根地址、协议和模型 ID |
+| mock 回复缺乏研究能力 | mock 只验证界面；配置并测试真实服务商 |
+| 旧会话仍显示脑科学 | 无领域标记的历史会话按原设置保留；请新建教育会话 |
+| 研究工作台无法交接 | 先保存并接受**当前**方案，并检查模型运行环境 |
+| MCP 工具不可见 | 在服务器设置中选择“教育研究”，再新建会话 |
 
-详细命令和诊断方法请参阅[故障排查](https://brainpilot.chat/docs/zh-cn/troubleshooting)。如果 mock 模式正常但真实请求失败，应重点检查服务商或外部工具配置，而不是反复重装 BrainPilot。
-
-## 加入研究输入
-
-本地数据可按[研究数据集](./datasets)指南先下载小范围样本，再点**用于新研究**准备草稿。论文可按[技能与知识库](./skills-knowledge-base)指南上传 PDF 并建立索引。[研究工作区](./research-workspace)介绍持久文件和从轨迹打开产物的操作。
-
-## 下一步
-
-- [安装说明](https://brainpilot.chat/docs/zh-cn/installation)——更新、数据目录、后台运行和本地隔离边界。
-- [模型服务商](https://brainpilot.chat/docs/zh-cn/providers)——协议选择、CLI 初始化和服务商配置。
-- [MCP 工具](https://brainpilot.chat/docs/zh-cn/mcp)——连接可信的 stdio、HTTP 或 SSE 工具。
-- [技能与知识库](https://brainpilot.chat/docs/zh-cn/skills-knowledge-base)——了解可复用指导和研究资源。
-- [故障排查](https://brainpilot.chat/docs/zh-cn/troubleshooting)——解决安装、启动、服务商和 MCP 问题。
+更多诊断见[故障排查](./troubleshooting)，教育领域的人工评价项目见[验收用例](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/EDUCATION-EVALUATION.md)。

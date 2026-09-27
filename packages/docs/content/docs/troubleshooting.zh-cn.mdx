@@ -1,9 +1,15 @@
 ---
 title: 故障排查
-description: 处理常见的安装、启动、模型服务商和 MCP 问题。
+description: 排查教育研究版的源码启动、领域选择、模型服务商和 MCP 问题。
 ---
 
-## `brainpilot: command not found`
+## 先确认正在使用教育研究版
+
+Education Researcher 从本仓库根目录运行：先执行 `npm ci` 和 `npm run build`，再执行 `npm run bp -- up`。上游全局 npm 包及 `brainpilot.chat` 不包含本分支功能。若会话没有教育研究选项，请确认打开的是这次源码进程显示的本地地址，而非旧进程或上游托管站点。
+
+新会话默认教育研究；未标记领域的历史会话按脑科学保留。领域在创建会话时固定，要切换请新建会话。若模型仍给出脑科学内容，检查请求或引用文件中是否带有脑科学背景，并核对**研究方向**与配置给该方向的 MCP 工具。领域设置不会清除底层模型的预训练知识。
+
+## 上游包的 `brainpilot: command not found`
 
 先确认全局包是否安装：
 
@@ -21,13 +27,13 @@ macOS/Linux 将该前缀下的 `bin` 子目录加入 `PATH`；Windows 则加入�
 
 ## Node 版本太低
 
-BrainPilot 要求 Node.js 22 或更高版本：
+Education Researcher 源码要求 Node.js 22.13.0 或更高版本：
 
 ```bash
 node -v
 ```
 
-如果版本低于 `v22`，请先升级 Node.js。
+如果版本低于 `v22.13.0`，请先升级 Node.js。
 
 ## npm 全局安装权限错误
 
@@ -35,7 +41,13 @@ node -v
 
 ## 端口被占用
 
-尝试换一个端口：
+教育版源码尝试换一个端口：
+
+```bash
+npm run bp -- up --port 9010
+```
+
+上游全局包对应命令：
 
 ```bash
 brainpilot up --port 9010
@@ -79,12 +91,13 @@ brainpilot logs
 - HTTP/SSE URL 是否可访问
 - 鉴权 headers 或 query token 是否正确
 - stdio 命令路径和参数是否有效
+- 服务器的**用于研究方向**是否包含当前会话；新服务器默认教育研究，旧配置未标记时仅供脑科学使用
 
 修改 MCP 设置后，新建一个会话。
 
 ## 干净的无 Key 冒烟测试
 
-用 mock 模式把安装问题和 provider 问题分开：
+用 mock 模式把安装问题和 provider 问题分开；下面是上游全局包命令，教育版源码请使用 `BP_MOCK=1 npm run bp -- up --dir ./bp-smoke-test --port 9011`（PowerShell 先设置 `$env:BP_MOCK = '1'`）。mock 不能评价模型的教育研究能力。
 
 ```bash
 BP_MOCK=1 brainpilot up --dir ./bp-smoke-test --port 9011

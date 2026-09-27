@@ -2,11 +2,11 @@ import { defineMessages } from "../types";
 
 export default defineMessages(
   {
-    "shell.aria.workspace": "科研工作区",
+    "shell.aria.workspace": "研究工作区",
     "shell.aria.toolbarActions": "工作区操作",
     "shell.aria.activeSession": "当前会话",
     "shell.sessionLabel": "会话",
-    "shell.defaultWorkspace": "BrainPilot 科研工作区",
+    "shell.defaultWorkspace": "Education Researcher 研究工作区",
     "shell.aria.viewTabs": "工作区视图",
     "shell.view.chat": "对话",
     "shell.view.agents": "智能体",
@@ -25,7 +25,7 @@ export default defineMessages(
     "shell.aria.toolbarActions": "Workspace actions",
     "shell.aria.activeSession": "Active session",
     "shell.sessionLabel": "Session",
-    "shell.defaultWorkspace": "BrainPilot research workspace",
+    "shell.defaultWorkspace": "Education Researcher workspace",
     "shell.aria.viewTabs": "Workspace view",
     "shell.view.chat": "Chat",
     "shell.view.agents": "Agents",

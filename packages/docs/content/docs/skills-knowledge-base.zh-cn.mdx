@@ -1,9 +1,11 @@
 ---
 title: 技能与知识库
-description: 理解 BrainPilot 的内置技能库，以及如何接入自己的研究语料。
+description: 了解教育研究方法技能、来源索引和本地论文检索的使用边界。
 ---
 
-BrainPilot 自带脑科学技能库。技能不是 MCP 服务器，而是结构化的方法学文档，智能体会在相关任务中发现并按需读取。
+Education Researcher 内置六项教育研究方法技能：**证据综述、研究设计、测量、质性研究、学习分析与隐私、教育 AI 评价**。它们是可按需读取的方法文档，不是训练后的新模型，也不是论文全文库。原 BrainPilot 的脑科学技能仍保留给主动选择的脑科学会话；教育会话默认只发现教育技能及允许的通用技能。
+
+教育技能目录的[权威来源索引](https://github.com/Kirihara-Ryouji/Education-Researcher/blob/main/packages/skills/skills/22_Education/AUTHORITATIVE_SOURCES.md)列出可核对的方法、报告和伦理入口。它是**入口清单**，不包含自动下载的教育论文全文；引用具体研究结果前仍须核对原文。
 
 ## 内置技能
 
@@ -29,7 +31,7 @@ brainpilot/bp_template/skills/
 ---
 name: "skill-name"
 description: "用于匹配的一句话摘要，应该包含清晰关键词。"
-domain: "brain-science"
+domain: "education-research"
 version: "1.0.0"
 ---
 ```
@@ -49,18 +51,19 @@ version: "1.0.0"
 npm run build -w @brainpilot/skills
 ```
 
-## 构建你自己的技能库
+## 扩充教育研究技能
 
-demo 中的技能来自论文库和方法学库。你也可以把 BrainPilot 的工具对准自己关心的论文、代码库和方法，逐步构建自己的技能库：
+可以以[六项内置教育技能](https://github.com/Kirihara-Ryouji/Education-Researcher/tree/main/packages/skills/skills/22_Education)为模板，将已核实的方法和适用边界写入自己的技能。来源、适用学段、测量前提、伦理限制和版本日期应清晰标注。
 
-- **`paper-to-skill`**：给智能体一篇论文、PDF 或文本来源，让它把其中的方法学转换成技能。它会生成一份面向可复现方法的初稿 `SKILL.md`。
-- **`repo-to-skill`**：给智能体一个 GitHub URL 或本地仓库路径。它会把代码库转换成结构化技能，并通过 `references/` 做渐进式披露。
-- **批量提取流水线**：如果要处理一整个文件夹的论文或转录稿，可以使用 [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills) 中的 `pipeline/` 工具。配置 pipeline、放入 `.txt` 或 `.md` 来源、设置 API key 后，运行 `python pipeline/extract.py --config pipeline/config.yaml`。
-- **现成技能合集**：也可以直接把 [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills) 或 [`nature-skills`](https://github.com/Yuan1z0825/nature-skills) 中的技能复制到 `<data-dir>/bp_template/skills/`。
+- **`paper-to-skill`** 可从论文、PDF 或文本生成方法技能的初稿；研究者要核对原文、参数、引文和授权范围。
+- **`repo-to-skill`** 可把可信代码库转换成结构化方法技能；检查代码与文档版本是否一致。
+- 自己编辑的技能放在 `<data-dir>/bp_template/skills/<category>/<skill-name>/SKILL.md`，新建会话后检查它是否实际可见。教育会话的内置资源过滤不会把任意脑科学技能自动纳入教育方向。
 
-生成后的目录应遵循 `<category>/<skill-name>/SKILL.md` 结构。添加技能后，重启 BrainPilot 或新建会话。
+上游的 [`awesome_cognitive_and_neuroscience_skills`](https://github.com/NeuroAIHub/awesome_cognitive_and_neuroscience_skills) 和 [`nature-skills`](https://github.com/Yuan1z0825/nature-skills) 是原项目可选资料，不代表教育研究资源，也不会自动成为教育会话的依据。
 
-## 上传论文并建立索引
+## 原有本地论文知识库
+
+下面的上传与索引流程沿用原 BrainPilot 本地知识库。**教育会话默认不调用这套本地脑科学知识检索工具**。要在教育研究中管理、核验并引用文献，优先使用[研究工作区](./research-workspace)的来源与证据记录；若需自动检索自己的教育论文库，应另行接入经审查且配置为教育方向的检索服务。
 
 本地安装中打开**设置 → 知识库**，或从**插件 → 知识库 → 我的知识库 / 上传论文**进入。
 
@@ -75,17 +78,17 @@ npm 安装会把随包提供的流水线准备到 `~/.brainpilot/KnowledgeBase/`
 
 托管 Cloud 不提供本地管理界面，预置检索能力由服务端控制。
 
-## 接入检索服务
+## 接入教育文献检索服务
 
-开源包里不会内置一个公开托管知识库。你可以通过 MCP 接入自己的检索服务：
+开源包没有预装可直接检索的教育论文全文库。你可以通过 MCP 接入自己的教育文献检索服务，并在服务器设置中选择**教育研究**方向：
 
-- 面向实验室论文库的向量检索服务
-- 论文搜索服务
-- 基于文件系统或数据库的检索工具
+- 经机构授权的教育论文或政策文档库
+- 可返回稳定来源定位与访问日期的论文搜索服务
+- 仅暴露已获授权目录的文件或数据库检索工具
 - 内部文献综述 API
 
-也可以把重要论文或方法转换成技能，让智能体在不依赖远程检索服务的情况下获得稳定的方法学上下文。
+服务返回的摘要、摘录与引文仍需核对原文。[MCP 工具](./mcp)说明服务器的研究方向设置与数据访问边界。
 
 ## 使用前验证
 
-部分技能可能来自论文或代码库的自动提取。把结果用于真实科研前，请核对数值参数、引用和方法假设。
+教育技能和自动提取的技能都可能不完整。用于真实研究前，请核对数值参数、引用、样本与情境适配、方法假设及伦理要求。

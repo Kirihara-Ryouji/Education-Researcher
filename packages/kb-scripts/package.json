@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "BrainPilot KnowledgeBase Python scripts + model_server sidecar, materialised into ~/.brainpilot/KnowledgeBase on first launch",
+  "description": "Optional BrainPilot local paper-index pipeline retained for neuroscience sessions in Education Researcher",
   "files": [
     "kb"
   ],
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git",
     "directory": "packages/kb-scripts"
   },
   "publishConfig": {

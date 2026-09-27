@@ -2,8 +2,8 @@
   "id": "org.brainpilot.auditor",
   "version": "0.2.3",
   "apiVersion": "1",
-  "displayName": "BrainPilot Auditor",
-  "description": "Independent evidence and scientific-reliability audit feedback loop for PI and Expert results.",
+  "displayName": "Research Integrity Auditor",
+  "description": "Independent evidence and method review for education research and optional neuroscience sessions.",
   "categories": [
     "analysis",
     "workflow",

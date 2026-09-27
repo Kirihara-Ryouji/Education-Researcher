@@ -1,11 +1,25 @@
 ---
 title: 安装与更新
-description: 安装、更新、运行和卸载 BrainPilot，同时避免影响不相关的本地环境。
+description: 从源码安装教育研究版，并区分上游 BrainPilot 已发布软件包。
 ---
 
-## 推荐的 npm 安装方式
+## 安装教育研究版
 
-单用户本地使用时，推荐直接安装已发布的 npm 包：
+**Education Researcher 需要从本仓库源码运行。**请安装 Node.js 22.13.0 或更新版本，在仓库根目录执行：
+
+```bash
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
+npm ci
+npm run build
+npm run bp -- up
+```
+
+打开终端显示的本地地址。新会话默认教育研究；脑科学研究需要在新会话中主动选择。上游已发布的 npm 包、官方容器镜像和托管服务不包含本分支的教育改动。升级本源码版前先停止任务和服务、备份数据目录，再从仓库拉取更新并重新执行 `npm ci`、`npm run build`，使用原数据目录启动。
+
+## 上游 BrainPilot npm 包
+
+以下命令安装的是上游已发布版本，适用于需要原有 BrainPilot 功能的单用户本地使用，不会安装教育研究版：
 
 ```bash
 npm install -g @brainpilot/app@0.2.3
@@ -14,7 +28,7 @@ brainpilot up
 
 这个包包含 CLI、后端、运行时、Web UI 和内置技能库，本机启动后即可在浏览器使用。
 
-## 更新并保留数据
+## 更新上游 npm 包并保留数据
 
 先完成或取消活动任务，再停止旧进程。后台模式请指定启动时使用的同一数据目录：
 
@@ -34,13 +48,13 @@ brainpilot up --dir ./my-brainpilot-data
 
 回退软件包时，先停止服务，重新安装已知可用的旧版本，再用保留的数据目录启动。不要在软件包回退时删除数据或覆盖备份；旧版本可能无法显示新版本的元数据。
 
-## 卸载
+## 卸载上游 npm 包
 
 ```bash
 npm uninstall -g @brainpilot/app
 ```
 
-这只会删除 CLI 包，不会删除你的 BrainPilot 数据目录。
+这只会删除上游 CLI 包，不会删除你的 BrainPilot 数据目录。源码安装无需卸载全局包；停止进程即可。
 
 ## 数据目录
 
@@ -79,9 +93,9 @@ npm 方式是本地进程，不会自动创建 Docker 沙箱。智能体会在�
 
 如果需要更强的进程隔离，请使用 [Docker 部署](./docker)，而不是 npm 本地进程。
 
-## 从源码运行
+## 从上游源码运行 BrainPilot
 
-如果你想使用 GitHub 上的最新代码，或准备参与开发：
+以下命令用于原版 BrainPilot 源码开发，不包含 Education Researcher 的改动：
 
 ```bash
 git clone https://github.com/NeuroAIHub/BrainPilot.git
@@ -101,7 +115,7 @@ BP_MOCK=1 npm run bp -- up
 
 ## 后台模式
 
-让 BrainPilot 在后台运行：
+上游全局安装的 BrainPilot 可以在后台运行：
 
 ```bash
 brainpilot up --detach

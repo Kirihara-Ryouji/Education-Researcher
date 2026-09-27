@@ -1,7 +1,6 @@
-# Contributing to BrainPilot
+# Contributing to Education Researcher
 
-Thanks for your interest in contributing to BrainPilot! This guide covers how to set up a
-dev environment, the branch model, what to run before opening a PR, and how releases work.
+Education Researcher is a fork of [BrainPilot](https://github.com/NeuroAIHub/BrainPilot) focused on education research. This guide covers local development and contributions to this repository. The `@brainpilot/*` package names and command names remain for compatibility with the upstream codebase.
 
 ## How to Contribute
 
@@ -13,23 +12,23 @@ dev environment, the branch model, what to run before opening a PR, and how rele
 | **New feature or architecture change** | Open an issue or discussion **before** opening a PR |
 | **Refactor-only PR** | Not accepted unless a maintainer explicitly requests it |
 | **Documentation** | Open a PR directly |
-| **Question** | Open an issue, or reach out in the [community group](README.md#-community) |
+| **Question** | Open an issue in this repository |
 
 ## Prerequisites
 
-- **[Node.js](https://nodejs.org/) ≥ 22**
+- **[Node.js](https://nodejs.org/) ≥ 22.13**
 - **npm** (bundled with Node)
-- An **Anthropic API key** for real runs — or use `BP_MOCK=1` to develop without one
+- A configured model provider for real agent runs — or use `BP_MOCK=1` to develop without one
 
 ## Getting Started (run from source)
 
 ```bash
 # Clone the repository
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
 
 # Install dependencies and build all packages
-npm install
+npm ci
 npm run build
 
 # Launch from source (equivalent to `brainpilot up --port 9005`)
@@ -47,11 +46,11 @@ npm run bp -- up --port 9005
 >
 > (the runtime uses `port + 1`).
 
-For a no-key smoke run: `BP_MOCK=1 npm run bp -- up`.
+For a no-key smoke run on Unix shells: `BP_MOCK=1 npm run bp -- up`. On PowerShell, run `$env:BP_MOCK = '1'` before `npm run bp -- up`. Mock responses do not validate the education research quality of a model.
 
 ## Development Workflow
 
-BrainPilot follows a simple GitHub Flow: **`main` is the single source of truth.**
+This repository follows a simple GitHub Flow: **`main` is the single source of truth.**
 You branch off `main`, open a PR, and merge back into `main` once CI is green and a
 maintainer approves.
 
@@ -70,19 +69,7 @@ maintainer approves.
 
 ### How your PR is verified
 
-Two layers, with different jobs:
-
-- **Public CI (the merge gate)** — every PR runs the GitHub Actions workflow
-  (typecheck + unit tests + web build + the fast black-box suites). This is the
-  authoritative gate: it is fully public and reproducible, so you can see exactly
-  what is checked and reproduce any failure locally. **A PR merges once this is
-  green** (and a maintainer approves).
-- **Maintainer regression (pre-release)** — maintainers additionally run a fuller
-  regression (real provider / real sessions) on internal infrastructure before
-  cutting a release. This is a release-time smoke check, **not** a per-PR gate, so
-  it never blocks external contributors. Test cases from it are continuously
-  de-identified and folded back into the public CI above, so the public gate keeps
-  getting stronger over time.
+Run the public CI checks and review the actual user flow. For changes to prompts, sources, study plans, or domain isolation, also use [education evaluation cases](EDUCATION-EVALUATION.md). Code tests establish tool and data boundaries; real-model answer quality requires a configured provider and manual source review. State clearly in a PR when that evaluation has not been run.
 
 ## Before You Submit a PR
 
@@ -160,11 +147,10 @@ AI-assisted PRs are held to the same quality standard as any other PR.
 
 ## Project Structure
 
-BrainPilot is a TypeScript monorepo of eleven packages under `packages/` (nine
-public npm packages and two private workspaces):
+Education Researcher uses the BrainPilot TypeScript workspace layout. The research-domain policy lives in `protocol` and `runtime`; the education research record and handoff API live in `backend-core`; the interface lives in `web`; education methods live under `packages/skills/skills/22_Education/`:
 
 ```
-BrainPilot/
+Education-Researcher/
 ├── packages/
 │   ├── protocol/        # zod wire SSOT: AG-UI events, domain types, HTTP route contract
 │   ├── plugin-sdk/      # plugin manifests, compatibility, packaging, preview RPC
@@ -176,6 +162,9 @@ BrainPilot/
 │   ├── cli/             # @brainpilot/app — `brainpilot` / `bnpt` Docker-free launch
 │   ├── client-cli/      # @brainpilot/client-cli — headless verification client (private)
 │   ├── skills/          # @brainpilot/skills — built-in skills content library
+│   ├── plugin-got/      # research trace plugin
+│   ├── plugin-research/ # research plugin
+│   ├── plugin-monitor/  # monitoring plugin
 │   ├── kb-scripts/      # packaged KnowledgeBase Python scripts and model sidecar
 │   └── docs/            # documentation site workspace (private)
 ├── docker/              # Dockerfiles & sandbox build hooks
@@ -185,21 +174,20 @@ BrainPilot/
 
 ## Contributing a skill
 
-Skills encode validated domain methodology and live in `packages/skills/skills/` as a
-two-level `<category>/<skill-name>/SKILL.md` tree. They are loaded via Pi's native skill
-pipeline and materialized into the data dir at launch. See the
-[Built-in skills library](README.md#-resources--knowledge-base) section of the README for
-the folder layout, required YAML frontmatter, and quality guidelines. In short:
+Skills encode research-method guidance and live in `packages/skills/skills/` as a
+two-level `<category>/<skill-name>/SKILL.md` tree. Education skills belong under `22_Education`; the runtime exposes only skills allowed for the session's research domain. See the [education research guide](EDUCATION-RESEARCH.md) and the existing skills for the folder layout and source-review expectations. In short:
 
 1. Add `<category>/<skill-name>/SKILL.md` with `name` / `description` / `domain` / `version`
-   frontmatter (the `description` goes into the agent's system prompt and decides relevance).
+   frontmatter (the `description` helps skill discovery).
 2. Put drill-down material under `references/` rather than inline; keep `SKILL.md` under 500
    lines; cite every numerical parameter.
 3. `npm run build -w packages/skills`, then restart the runtime to pick it up.
 
-The `contribute-skills-via-pr` and `verify-skill` Meta-Skills document the full workflow.
+Review claims and citations against primary sources; an AI-generated skill is not itself evidence. The `contribute-skills-via-pr` and `verify-skill` Meta-Skills document the full workflow.
 
-## Releasing (maintainers)
+## Upstream release tooling (maintainers)
+
+The following npm and Docker commands belong to the upstream `@brainpilot` release process. This education fork has not published its changes under those package names. Do not use the commands below to distribute this fork without a separate release plan, package ownership, and version review. See [RELEASING.md](RELEASING.md).
 
 ### npm packages
 
@@ -207,7 +195,7 @@ The `contribute-skills-via-pr` and `verify-skill` Meta-Skills document the full 
 npm login                 # account with @brainpilot scope access
 npm run version:check     # verify all workspace package versions are aligned
 npm run release:dry       # pack-preview all public packages (no upload)
-npm run release           # publish 9 packages: plugin-sdk → skills → plugin-auditor → kb-scripts → protocol → runtime → backend-core → web → app
+npm run release           # upstream script publishes 12 public workspaces in dependency order
 ```
 
 `@brainpilot/client-cli` stays private and is never published.
@@ -239,13 +227,12 @@ region (for example, an ACR VPC endpoint) when available.
 
 ## Reporting Bugs
 
-Use the [Bug Report](https://github.com/NeuroAIHub/BrainPilot/issues/new?template=bug_report.yml)
-template. Include reproduction steps, expected vs. actual behavior, your deployment method
-(npm / Docker / from source), Node version, and any logs (`brainpilot logs`).
+Use the [Bug Report](https://github.com/Kirihara-Ryouji/Education-Researcher/issues/new?template=bug_report.yml)
+template. Include reproduction steps, expected vs. actual behavior, the selected research direction, the source commit or upstream package version, Node version, and sanitized logs. If the issue occurs only in the published upstream npm package, report it to [upstream BrainPilot](https://github.com/NeuroAIHub/BrainPilot/issues).
 
 ## Requesting Features
 
-Use the [Feature Request](https://github.com/NeuroAIHub/BrainPilot/issues/new?template=feature_request.yml)
+Use the [Feature Request](https://github.com/Kirihara-Ryouji/Education-Researcher/issues/new?template=feature_request.yml)
 template. For larger features, please open an issue or discussion first.
 
 ## Security Vulnerabilities
@@ -255,5 +242,5 @@ for private reporting via GitHub Security Advisories.
 
 ## License
 
-By contributing to BrainPilot, you agree that your contributions will be licensed under the
+By contributing to Education Researcher, you agree that your contributions will be licensed under the
 [GNU AGPL v3](LICENSE).

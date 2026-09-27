@@ -6,6 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
+  "description": "Education Researcher web workspace for education studies, with optional neuroscience sessions",
   "files": [
     "dist",
     "src",
@@ -17,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git",
     "directory": "packages/web"
   },
   "publishConfig": {

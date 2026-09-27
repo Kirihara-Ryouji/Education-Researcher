@@ -1,11 +1,13 @@
 ---
 title: Docker Deployment
-description: Run BrainPilot with source-built or official CPU and GPU sandbox images.
+description: Build Education Researcher containers from source and distinguish upstream BrainPilot images.
 ---
+
+**To use Education Researcher in Docker, build both the main and sandbox images from this repository's source.** The official `0.2.3` CPU/GPU sandbox images below are upstream BrainPilot releases without this fork's education runtime. Do not mix an education main image with those prebuilt upstream sandboxes and expect education resource filtering. Upstream hosted Cloud also does not include this fork's changes.
 
 ## When to Use Docker
 
-The npm installation is the simplest single-user setup. Use Docker when you need a reproducible
+Running this fork from source is the simplest single-user setup. Use Docker when you need a reproducible
 runtime, stronger process isolation, GPU dependencies, or one sandbox per hosted user.
 
 | Mode | Main process | Sandbox | Best for |
@@ -49,8 +51,8 @@ CUDA 12.4, PyTorch 2.6.0, and the published scientific GPU base environment.
 Clone the repository and create the local environment file:
 
 ```bash
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
 cp .env.example .env
 ```
 
@@ -66,9 +68,9 @@ Open `http://localhost:9001`. Runtime data is persisted under `BP_DATA_DIR` (def
 `./brainpilot`). Stop the deployment with `docker compose down`; this does not delete the data
 directory.
 
-### Use the Prebuilt CPU Sandbox
+### Use the Prebuilt Upstream CPU Sandbox
 
-To avoid rebuilding the CPU sandbox, set its full registry path and pull it first. Build only the
+The following path offers only original BrainPilot runtime behavior, **not this fork's education features**. To avoid rebuilding the upstream CPU sandbox, set its full registry path and pull it first. Build only the
 main image, then start Compose without rebuilding the sandbox:
 
 ```bash
@@ -100,7 +102,7 @@ For a source build, use the GPU override. It selects the `gpu` Dockerfile stage:
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
 ```
 
-To use the official prebuilt GPU sandbox instead:
+To use the official prebuilt GPU sandbox instead (original BrainPilot behavior only, without this fork's education runtime):
 
 ```bash
 export BP_SANDBOX_IMAGE_GPU=brainpilot-registry.cn-wulanchabu.cr.aliyuncs.com/brainpilot/sandbox-gpu:0.2.3
@@ -119,7 +121,7 @@ docker run --rm --gpus all --entrypoint python3 \
 
 ## Dynamic and Hosted Deployment
 
-Dynamic mode runs one sandbox per user through the host Docker daemon. Build the shared main
+The following dynamic mode describes upstream BrainPilot deployment; the listed official sandbox lacks this fork's education runtime. Dynamic mode runs one sandbox per user through the host Docker daemon. Build the shared main
 service and point it at a versioned sandbox image:
 
 ```bash

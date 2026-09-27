@@ -120,11 +120,11 @@ export function assertRepoCwd(options: AssertRepoCwdOptions = {}): void {
 
   stderr(
     [
-      "✗ brainpilot 必须在仓库根目录运行 (当前 cwd 不是 BrainPilotPi 仓库根)",
+      "✗ brainpilot 必须在仓库根目录运行 (当前 cwd 不是 Education Researcher 源码仓库根目录)",
       `    cwd      = ${cwd}`,
       `    bin.js   = ${binPath}`,
       "",
-      "  请 `cd` 到 BrainPilotPi 仓库根目录后再执行 `npm run bp -- ...`。",
+      "  请 `cd` 到 Education Researcher 源码仓库根目录后再执行 `npm run bp -- ...`。",
       "  这样配置随 `git pull` 自动更新, 且 dataDir (bp_template/, workspaces/) 不漂移。",
       "",
       "  例外情况 (开发 / CI):",

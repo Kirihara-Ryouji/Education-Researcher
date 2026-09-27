@@ -1,11 +1,13 @@
 ---
 title: Docker 部署
-description: 使用源码构建或官方 CPU、GPU 沙箱镜像运行 BrainPilot。
+description: 从教育研究版源码构建 Docker 服务，并区分原 BrainPilot 官方镜像。
 ---
+
+**要在 Docker 中使用 Education Researcher，必须从本仓库源码构建 main 和 sandbox 两个镜像。**下文列出的 `0.2.3` 官方 CPU/GPU 沙箱镜像来自上游 BrainPilot，不包含本分支的教育领域运行时；不要将教育版 main 与这些上游预构建沙箱混用并期望获得教育资源隔离。上游托管 Cloud 也不包含本分支改动。
 
 ## 什么时候使用 Docker
 
-npm 安装是最简单的单用户方案。如果你需要可复现的运行环境、更强的进程隔离、GPU 依赖，或希望为
+本分支的源码本地运行是最简单的单用户方案。如果你需要可复现的运行环境、更强的进程隔离、GPU 依赖，或希望为
 托管服务中的每位用户分配独立沙箱，请使用 Docker。
 
 | 模式 | 主进程 | 沙箱 | 适用场景 |
@@ -47,8 +49,8 @@ PyTorch 2.6.0 和已发布的 GPU 科学计算基础环境。
 克隆仓库并创建本地环境文件：
 
 ```bash
-git clone https://github.com/NeuroAIHub/BrainPilot.git
-cd BrainPilot
+git clone https://github.com/Kirihara-Ryouji/Education-Researcher.git
+cd Education-Researcher
 cp .env.example .env
 ```
 
@@ -63,10 +65,9 @@ docker compose ps
 打开 `http://localhost:9001`。运行数据保存在 `BP_DATA_DIR` 下，默认是 `./brainpilot`。使用
 `docker compose down` 停止服务不会删除该数据目录。
 
-### 使用预构建 CPU 沙箱
+### 使用上游预构建 CPU 沙箱
 
-如果不想重新构建 CPU 沙箱，可以设置完整镜像地址并先行拉取。只构建 main 镜像，然后在不重新构建
-沙箱的情况下启动 Compose：
+以下流程只适用于原版 BrainPilot 运行时能力，**不适用于本分支教育研究功能**。如果不想重新构建上游 CPU 沙箱，可以设置完整镜像地址并先行拉取。只构建 main 镜像，然后在不重新构建沙箱的情况下启动 Compose：
 
 ```bash
 export BP_SANDBOX_IMAGE=brainpilot-registry.cn-wulanchabu.cr.aliyuncs.com/brainpilot/sandbox:0.2.3
@@ -97,7 +98,7 @@ docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
 ```
 
-如果使用官方预构建 GPU 沙箱：
+如果使用官方预构建 GPU 沙箱（仅原版 BrainPilot 能力，不含本分支教育运行时）：
 
 ```bash
 export BP_SANDBOX_IMAGE_GPU=brainpilot-registry.cn-wulanchabu.cr.aliyuncs.com/brainpilot/sandbox-gpu:0.2.3
@@ -116,8 +117,7 @@ docker run --rm --gpus all --entrypoint python3 \
 
 ## 动态部署与云端部署
 
-动态模式通过宿主机 Docker daemon 为每位用户启动一个沙箱。构建共享 main 服务，并指定固定版本的
-沙箱镜像：
+以下动态模式展示上游 BrainPilot 的部署方式，所列官方沙箱不包含本分支教育运行时。动态模式通过宿主机 Docker daemon 为每位用户启动一个沙箱。构建共享 main 服务，并指定固定版本的沙箱镜像：
 
 ```bash
 export BP_SANDBOX_IMAGE=brainpilot-registry.cn-wulanchabu.cr.aliyuncs.com/brainpilot/sandbox:0.2.3

@@ -1052,7 +1052,7 @@ export function PromptComposer({ onOpenProviderSettings, onOpenWorkspaceFile }: 
           </div>
         ) : null}
 
-        {hasMessages ? null : <h1 id="prompt-heading">{currentSession?.title ?? t("chat.heading")}</h1>}
+        {hasMessages ? null : <h1 id="prompt-heading">{currentSession?.title ?? t(researchDomain === "neuroscience" ? "chat.heading.neuroscience" : "chat.heading")}</h1>}
 
         {hasMessages ? (
           <MessageStream

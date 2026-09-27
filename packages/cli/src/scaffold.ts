@@ -121,10 +121,13 @@ const TEMPLATE_MCP_EXAMPLE = JSON.stringify(
  * is intentionally NOT loaded (`noSkills: true`), so agent behaviour stays
  * reproducible across machines.
  */
-const SKILLS_README = `# BrainPilot skills
+const SKILLS_README = `# Education Researcher skills (BrainPilot-compatible)
 
-Drop Agent Skills here to extend what the agents can do. Everything in this
-folder is shared by **every session** in this data dir.
+Drop Agent Skills here to extend what the agents can do. Custom skills in this
+folder are shared by **every session** in this data dir. The bundled router
+skill catalogue is filtered by research focus: education is the default, and
+neuroscience skills are available only in sessions that choose neuroscience.
+Avoid putting identifiable student information in shared skill instructions.
 
 Two ways to add a skill:
 
@@ -160,7 +163,7 @@ disable-model-invocation: true
 
 # Example skill
 
-This is a placeholder skill shipped with BrainPilot's scaffold. It is hidden
+This is a placeholder skill shipped with the Education Researcher source fork. It is hidden
 from the model (\`disable-model-invocation: true\`) so it never affects real runs.
 
 To create your own skill, copy this file, rename it, write a clear
@@ -175,10 +178,11 @@ To create your own skill, copy this file, rename it, write a clear
  */
 const AGENTS_README = `# Agent prompt overrides
 
-This directory is intentionally **empty by default** — BrainPilot loads agent
+This directory is intentionally **empty by default** — Education Researcher loads agent
 system prompts from its built-in \`PERSONAS\` registry that ships with the
 runtime package, so a fresh install always uses the latest prompts after
-\`git pull\` without any extra step.
+\`git pull\` without any extra step. New sessions focus on education research;
+neuroscience sessions are explicitly selected when needed.
 
 Drop a file at \`agents/<name>/prompt.md\` to **override** a built-in agent's
 prompt. The runtime reads the on-disk file first and falls back to the built-in
@@ -206,7 +210,7 @@ auditor, trace.
 
 const SUBAGENTS_README = `# Subagent profiles
 
-This directory contains editable copies of BrainPilot's official isolated
+This directory contains editable copies of the BrainPilot-compatible isolated
 leaf-worker profiles. Edit a profile's prompt.md or profile.json, or add a new
 kebab-case directory with both files and a version-1 configuration.
 

@@ -1,9 +1,15 @@
 ---
 title: Troubleshooting
-description: Fix common installation, startup, provider, and MCP issues.
+description: Diagnose source startup, research focus, model provider, and MCP issues in the education fork.
 ---
 
-## `brainpilot: command not found`
+## Confirm you are running the education fork
+
+Run Education Researcher from the repository root: complete `npm ci` and `npm run build`, then run `npm run bp -- up`. The upstream globally installed npm package and `brainpilot.chat` do not include this fork. If the education research option is missing, check that the browser is at the local address printed by this source process rather than an older process or hosted site.
+
+New sessions default to education research; historical sessions without a domain marker retain neuroscience. The domain is fixed at session creation, so start a new session to switch. If a model still discusses neuroscience, check whether your prompt or attached materials contain that context, then inspect **Research focus** and domain-assigned MCP tools. The setting cannot erase the model's pretrained knowledge.
+
+## Upstream package: `brainpilot: command not found`
 
 Confirm the package is installed globally:
 
@@ -21,13 +27,13 @@ On macOS/Linux, add the prefix's `bin` subdirectory to `PATH`; on Windows, add t
 
 ## Node Version Is Too Old
 
-BrainPilot requires Node.js 22 or later:
+Education Researcher source requires Node.js 22.13.0 or later:
 
 ```bash
 node -v
 ```
 
-Install a newer Node.js release if the version is below `v22`.
+Install a newer Node.js release if the version is below `v22.13.0`.
 
 ## npm Global Permission Errors
 
@@ -35,7 +41,13 @@ If global install fails with permission errors, use a Node version manager or co
 
 ## Port Already in Use
 
-Try another port:
+For the education fork, try another port:
+
+```bash
+npm run bp -- up --port 9010
+```
+
+The upstream globally installed package uses:
 
 ```bash
 brainpilot up --port 9010
@@ -79,12 +91,13 @@ Check:
 - the HTTP/SSE URL is reachable
 - auth headers or query tokens are correct
 - stdio command paths and arguments are valid
+- the server's **Research focus** includes the current session; new servers default to education while old unmarked entries stay neuroscience-only
 
 Create a new session after changing MCP settings.
 
 ## Clean No-key Smoke Run
 
-Use mock mode to separate install problems from provider problems:
+Use mock mode to separate install problems from provider problems. The command below is for the upstream global package; use `BP_MOCK=1 npm run bp -- up --dir ./bp-smoke-test --port 9011` for this fork's source (set `$env:BP_MOCK = '1'` first in PowerShell). Mock output cannot assess education research quality.
 
 ```bash
 BP_MOCK=1 brainpilot up --dir ./bp-smoke-test --port 9011

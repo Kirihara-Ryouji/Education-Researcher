@@ -1,8 +1,8 @@
-export const appName = 'BrainPilot';
+export const appName = 'Education Researcher';
 
 export const docsRoute = '/';
 
 export const gitConfig = {
-  user: 'NeuroAIHub',
-  repo: 'BrainPilot',
+  user: 'Kirihara-Ryouji',
+  repo: 'Education-Researcher',
 };

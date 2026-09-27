@@ -33,21 +33,23 @@ let mockSandbox: Sandbox | null = {
   port: 8080,
   userId: mockUser.username,
   createdAt: "2026-05-10T02:05:00.000Z",
-  containerName: "mas-neuroscience-default",
+  containerName: "education-research-default",
   hostApiUrl: "http://127.0.0.1:8080",
 };
 
 let mockSessions: Session[] = [
   {
     id: "11111111-1111-4111-8111-111111111111",
-    title: "EEG preprocessing reproducibility plan",
+    title: "Classroom feedback study plan",
+    researchDomain: "education",
     
     createdAt: "2026-05-10T02:12:00.000Z",
     updatedAt: "2026-05-10T02:48:00.000Z",
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
-    title: "Bayesian power analysis comparison",
+    title: "Compare study design and power plans",
+    researchDomain: "education",
     
     createdAt: "2026-05-10T01:30:00.000Z",
     updatedAt: "2026-05-10T01:46:00.000Z",
@@ -115,7 +117,7 @@ const mockHistoryMessages: Record<string, SessionMessageEntry[]> = {
       type: "user",
       uuid: "mock-hist-user-1",
       timestamp: "2026-05-10T02:20:00.000Z",
-      message: { role: "user", content: "Build a reproducible EEG preprocessing plan", agent: "user" },
+      message: { role: "user", content: "Design a reproducible classroom feedback study", agent: "user" },
     },
     {
       type: "assistant",
@@ -125,8 +127,8 @@ const mockHistoryMessages: Record<string, SessionMessageEntry[]> = {
         role: "assistant",
         agent: "principal",
         content: [
-          { type: "text", text: "A reproducible plan should start with raw import, filtering, ICA review, epoching, and QC export." },
-          { type: "tool_use", id: "mock-tool-1", name: "record_trace", input: { node: "EEG preprocessing plan" } },
+          { type: "text", text: "A reproducible plan should define the question, sampling, consent, outcomes, analysis, and reporting boundaries." },
+          { type: "tool_use", id: "mock-tool-1", name: "record_trace", input: { node: "Classroom feedback study plan" } },
         ],
       },
     },
@@ -137,24 +139,24 @@ const mockTraceGraph: TraceGraph = {
   meta: {
     sessionId: "11111111-1111-4111-8111-111111111111",
     userId: "fy",
-    projectName: "Mock EEG workflow",
-    currentFocus: "qc-summary",
+    projectName: "Mock classroom feedback study",
+    currentFocus: "measurement-review",
     createdAt: "2026-05-10T02:21:00.000Z",
   },
   nodes: [
     {
       id: "plan",
-      title: "Define preprocessing plan",
+      title: "Define study plan",
       type: "plan",
       nodeType: "action",
       status: "done",
       agent: "principal",
-      description: "Outlined a reproducible EEG preprocessing workflow and selected the main execution checkpoints.",
-      summary: "Outlined a reproducible EEG preprocessing workflow.",
-      reason: "The session needed an explicit, reproducible preprocessing path before tools could be delegated.",
-      context: "Raw EEG data will be imported, filtered, cleaned with ICA, epoched, and exported with QC artifacts.",
+      description: "Outlined a reproducible classroom feedback study and its main review checkpoints.",
+      summary: "Outlined a reproducible classroom feedback study.",
+      reason: "The research question needs an explicit design before analysis tasks can be delegated.",
+      context: "Aggregate classroom outcomes will be reviewed for missingness, measurement quality, and analysis assumptions.",
       parents: [],
-      artifacts: [{ path: "/workspace/src/pipeline.yaml", type: "code" }],
+      artifacts: [{ path: "/workspace/src/analysis-plan.yaml", type: "code" }],
       parentIds: [],
       childIds: ["qc"],
       createdAt: "2026-05-10T02:21:00.000Z",
@@ -171,9 +173,9 @@ const mockTraceGraph: TraceGraph = {
       agent: "principal",
       description: "Asked the librarian expert to monitor method references and naming consistency.",
       summary: "Delegated method context tracking to librarian.",
-      reason: "Preprocessing decisions should remain aligned with accepted EEG reporting practice.",
-      context: "The plan introduced ICA and QC checkpoints that need literature-grounded wording.",
-      parents: [{ id: "plan", relation: "necessitated_by", edgeType: "main_flow", explanation: "The workflow needs literature-grounded QC checkpoints." }],
+      reason: "Outcome measures and sampling choices need education-methods support.",
+      context: "The plan requires source-grounded definitions of formative feedback and reading outcomes.",
+      parents: [{ id: "plan", relation: "necessitated_by", edgeType: "main_flow", explanation: "The study plan needs literature-grounded measures." }],
       artifacts: [],
       parentIds: ["plan"],
       childIds: ["qc"],
@@ -183,19 +185,19 @@ const mockTraceGraph: TraceGraph = {
     },
     {
       id: "qc",
-      title: "Quality-control checkpoints",
+      title: "Measurement review checkpoints",
       type: "analysis",
       nodeType: "observation",
       status: "done",
       agent: "librarian",
-      description: "Captured retained epochs, ICA removals, and frontal-channel warnings.",
-      summary: "Captured retained epochs, ICA removals, and frontal-channel warnings.",
+      description: "Reviewed outcome completeness, scoring consistency, and site-level variation.",
+      summary: "Reviewed outcome completeness and scoring consistency.",
       reason: "The workflow needs inspectable artifacts before it can be reproduced.",
-      context: "Mock QC artifacts summarize retained epochs and ICA removal decisions.",
-      parents: [{ id: "delegate", relation: "used", edgeType: "branch", explanation: "The librarian context informed the QC report wording." }],
+      context: "Mock review artifacts summarize synthetic, aggregated classroom outcomes.",
+      parents: [{ id: "delegate", relation: "used", edgeType: "branch", explanation: "The librarian context informed the measurement report wording." }],
       artifacts: [
-        { path: "/workspace/reports/qc-summary.md", type: "report" },
-        { path: "/workspace/reports/qc-plot.svg", type: "image" },
+        { path: "/workspace/reports/measurement-summary.md", type: "report" },
+        { path: "/workspace/reports/outcome-plot.svg", type: "image" },
       ],
       parentIds: ["delegate"],
       childIds: [],
@@ -215,16 +217,16 @@ const fileEntries: Record<string, FileEntry[]> = {
     { name: "reports", type: "folder", size: 0, modified: 1_715_292_600, permissions: "rwxr-xr-x" },
   ],
   "/workspace/src": [
-    { name: "preprocess_eeg.py", type: "file", size: 1380, modified: 1_715_293_000, permissions: "rw-r--r--" },
-    { name: "pipeline.yaml", type: "file", size: 516, modified: 1_715_293_300, permissions: "rw-r--r--" },
+    { name: "analyze_outcomes.py", type: "file", size: 1380, modified: 1_715_293_000, permissions: "rw-r--r--" },
+    { name: "analysis-plan.yaml", type: "file", size: 516, modified: 1_715_293_300, permissions: "rw-r--r--" },
   ],
   "/workspace/data": [
-    { name: "participants.csv", type: "file", size: 168, modified: 1_715_293_900, permissions: "rw-r--r--" },
-    { name: "raw-large.edf", type: "file", size: 4_800_000, modified: 1_715_294_200, permissions: "rw-r--r--" },
+    { name: "site-summary.csv", type: "file", size: 168, modified: 1_715_293_900, permissions: "rw-r--r--" },
+    { name: "large-observations.csv", type: "file", size: 4_800_000, modified: 1_715_294_200, permissions: "rw-r--r--" },
   ],
   "/workspace/reports": [
-    { name: "qc-summary.md", type: "file", size: 1120, modified: 1_715_294_600, permissions: "rw-r--r--" },
-    { name: "qc-plot.svg", type: "file", size: 932, modified: 1_715_294_900, permissions: "rw-r--r--" },
+    { name: "measurement-summary.md", type: "file", size: 1120, modified: 1_715_294_600, permissions: "rw-r--r--" },
+    { name: "outcome-plot.svg", type: "file", size: 932, modified: 1_715_294_900, permissions: "rw-r--r--" },
   ],
 };
 
@@ -261,15 +263,15 @@ export function applyMockFileDelete(
 const fileContents: Record<string, string> = {
   "/workspace/README.md":
     "# Mock research workspace\n\nThis mock workspace mirrors the backend file API shape.\n\n- `src/` contains analysis code\n- `data/` contains small fixtures\n- `reports/` contains generated notes\n",
-  "/workspace/src/preprocess_eeg.py":
-    "from pathlib import Path\n\n\ndef preprocess(raw_dir: Path) -> dict[str, float]:\n    \"\"\"Mock EEG preprocessing summary.\"\"\"\n    return {\n        \"n_subjects\": 24,\n        \"bad_channel_rate\": 0.031,\n        \"mean_rejected_epochs\": 4.8,\n    }\n",
-  "/workspace/src/pipeline.yaml":
-    "steps:\n  - import_raw\n  - notch_filter\n  - bandpass_filter\n  - ica_artifact_rejection\n  - epoch\n  - export_qc_report\n",
-  "/workspace/data/participants.csv": "id,group,age\nsub-001,control,24\nsub-002,patient,31\nsub-003,control,28\n",
-  "/workspace/reports/qc-summary.md":
-    "# QC Summary\n\nThe mock run completed successfully.\n\n- Mean retained epochs: **91.2%**\n- Median ICA components removed: `2`\n- Recommended next step: inspect frontal channels for residual blink artifacts.\n",
-  "/workspace/reports/qc-plot.svg":
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280"><rect width="520" height="280" fill="#f8f8f6"/><g fill="none" stroke="#1f2937" stroke-width="2"><path d="M54 222H476"/><path d="M54 40v182"/></g><g fill="#111827"><text x="54" y="26" font-family="Arial" font-size="16">Mock EEG QC retained epochs</text><text x="62" y="246" font-family="Arial" font-size="11">sub-001</text><text x="182" y="246" font-family="Arial" font-size="11">sub-002</text><text x="302" y="246" font-family="Arial" font-size="11">sub-003</text></g><g fill="#111827"><rect x="72" y="78" width="66" height="144" rx="3"/><rect x="192" y="94" width="66" height="128" rx="3"/><rect x="312" y="60" width="66" height="162" rx="3"/></g></svg>',
+  "/workspace/src/analyze_outcomes.py":
+    "from pathlib import Path\n\n\ndef review_outcomes(data_dir: Path) -> dict[str, float]:\n    \"\"\"Mock review of aggregated classroom outcomes.\"\"\"\n    return {\n        \"n_sites\": 3,\n        \"outcome_completion_rate\": 0.912,\n        \"mean_score_change\": 4.8,\n    }\n",
+  "/workspace/src/analysis-plan.yaml":
+    "steps:\n  - define_question\n  - review_consent_and_sampling\n  - check_outcome_measure\n  - inspect_missingness\n  - compare_aggregate_scores\n  - export_review_report\n",
+  "/workspace/data/site-summary.csv": "site_id,condition,mean_score\nschool-a,comparison,68\nschool-b,feedback,73\nschool-c,feedback,71\n",
+  "/workspace/reports/measurement-summary.md":
+    "# Measurement review\n\nThis is a synthetic demonstration, not a study result.\n\n- Outcome completion: **91.2%**\n- Three aggregated school sites\n- Next step: verify scoring rules, missingness, and comparability before drawing conclusions.\n",
+  "/workspace/reports/outcome-plot.svg":
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280"><rect width="520" height="280" fill="#f8f8f6"/><g fill="none" stroke="#1f2937" stroke-width="2"><path d="M54 222H476"/><path d="M54 40v182"/></g><g fill="#111827"><text x="54" y="26" font-family="Arial" font-size="16">Synthetic mean reading scores by site</text><text x="62" y="246" font-family="Arial" font-size="11">school A</text><text x="182" y="246" font-family="Arial" font-size="11">school B</text><text x="302" y="246" font-family="Arial" font-size="11">school C</text></g><g fill="#111827"><rect x="72" y="78" width="66" height="144" rx="3"/><rect x="192" y="94" width="66" height="128" rx="3"/><rect x="312" y="60" width="66" height="162" rx="3"/></g></svg>',
 };
 
 let seq = 0;
@@ -318,7 +320,7 @@ export const mockBackend = {
       port: 8080,
       userId: mockUser.username,
       createdAt: now(),
-      containerName: `mas-neuroscience-${name}`,
+      containerName: `education-research-${name}`,
       hostApiUrl: "http://127.0.0.1:8080",
     };
     return mockSandbox;
@@ -458,18 +460,18 @@ export const mockBackend = {
     // demo replay can be exercised end-to-end in mock mode.
     return [
       { type: "RUN_STARTED", _ts: "2026-05-10T02:20:45.000Z", agentName: "principal" },
-      { type: "TEXT_MESSAGE_CHUNK", _ts: "2026-05-10T02:20:50.000Z", messageId: "u1", role: "user", delta: "Design a reproducible EEG preprocessing pipeline." },
+      { type: "TEXT_MESSAGE_CHUNK", _ts: "2026-05-10T02:20:50.000Z", messageId: "u1", role: "user", delta: "Design a reproducible classroom feedback study." },
       { type: "REASONING_MESSAGE_START", _ts: "2026-05-10T02:21:00.000Z", messageId: "r1", agentName: "principal" },
-      { type: "REASONING_MESSAGE_CONTENT", _ts: "2026-05-10T02:21:02.000Z", messageId: "r1", delta: "Outline import → filter → ICA → epoch → export, with QC checkpoints." },
+      { type: "REASONING_MESSAGE_CONTENT", _ts: "2026-05-10T02:21:02.000Z", messageId: "r1", delta: "Outline sampling, consent, outcomes, missing-data checks, and reporting boundaries." },
       { type: "REASONING_MESSAGE_END", _ts: "2026-05-10T02:21:10.000Z", messageId: "r1" },
       { type: "TOOL_CALL_START", _ts: "2026-05-10T02:21:12.000Z", toolCallId: "t1", toolCallName: "record_trace", agentName: "principal" },
-      { type: "TOOL_CALL_ARGS", _ts: "2026-05-10T02:21:13.000Z", toolCallId: "t1", delta: "{\"title\":\"Define preprocessing plan\"}" },
+      { type: "TOOL_CALL_ARGS", _ts: "2026-05-10T02:21:13.000Z", toolCallId: "t1", delta: "{\"title\":\"Define study plan\"}" },
       { type: "TOOL_CALL_END", _ts: "2026-05-10T02:21:14.000Z", toolCallId: "t1" },
       { type: "TEXT_MESSAGE_START", _ts: "2026-05-10T02:21:20.000Z", messageId: "a1", agentName: "principal" },
-      { type: "TEXT_MESSAGE_CONTENT", _ts: "2026-05-10T02:21:22.000Z", messageId: "a1", delta: "I drafted a reproducible pipeline in `src/pipeline.yaml`." },
+      { type: "TEXT_MESSAGE_CONTENT", _ts: "2026-05-10T02:21:22.000Z", messageId: "a1", delta: "I drafted a study workflow in `src/analysis-plan.yaml`." },
       { type: "TEXT_MESSAGE_END", _ts: "2026-05-10T02:21:28.000Z", messageId: "a1" },
       { type: "TEXT_MESSAGE_START", _ts: "2026-05-10T02:24:05.000Z", messageId: "a2", agentName: "librarian" },
-      { type: "TEXT_MESSAGE_CONTENT", _ts: "2026-05-10T02:24:08.000Z", messageId: "a2", delta: "QC summary captured retained epochs and ICA removals — see `reports/qc-summary.md`." },
+      { type: "TEXT_MESSAGE_CONTENT", _ts: "2026-05-10T02:24:08.000Z", messageId: "a2", delta: "The measurement review covers completeness and scoring consistency — see `reports/measurement-summary.md`." },
       { type: "TEXT_MESSAGE_END", _ts: "2026-05-10T02:24:23.000Z", messageId: "a2" },
       { type: "RUN_FINISHED", _ts: "2026-05-10T02:24:25.000Z", agentName: "principal" },
     ];
@@ -496,9 +498,9 @@ export const mockBackend = {
   async promptSuggestions(): Promise<string[]> {
     await wait(80);
     return [
-      "Design a reproducible EEG preprocessing pipeline",
-      "Compare Bayesian and frequentist power plans",
-      "Summarize provenance for the latest analysis run",
+      "Design a classroom feedback study with measurable outcomes",
+      "Compare study designs for a reading intervention",
+      "Review evidence and limitations before drafting a claim",
     ];
   },
 
@@ -684,12 +686,10 @@ export async function mockSendUserMessage(
     sessionId: message.sessionId,
     data: { agentName: "principal" },
   };
-  const text =
-    `I can help turn "${message.content}" into a reproducible neuroscience workflow.\n\n` +
-    "Suggested next steps:\n" +
-    "1. Define the cohort and exclusion rules.\n" +
-    "2. Select preprocessing checkpoints.\n" +
-    "3. Record trace nodes for data, method, and result provenance.";
+  const isNeuroscience = mockSessions.find((session) => session.id === message.sessionId)?.researchDomain === "neuroscience";
+  const text = isNeuroscience
+    ? `I can help turn "${message.content}" into a reproducible neuroscience workflow.\n\nSuggested next steps:\n1. Define the cohort and exclusion rules.\n2. Select preprocessing checkpoints.\n3. Record data, method, and result provenance.`
+    : `I can help turn "${message.content}" into a reproducible education research plan.\n\nSuggested next steps:\n1. Define the education setting and research question.\n2. Review consent, sampling, measures, and missing data.\n3. Link evidence, methods, and claims for review.`;
 
   emit({
     type: "user_message",

@@ -1,9 +1,9 @@
 ---
 title: Providers
-description: Configure model providers from the Settings UI or CLI initialization.
+description: Connect a model provider to Education Researcher and understand how models differ from research focus.
 ---
 
-BrainPilot can talk to multiple model provider protocols:
+Education Researcher uses BrainPilot's model-provider connections. **Research focus configures session prompts and resources; it does not mean a provider supplies a separately trained education model or erase the model's prior knowledge.** Researchers must still review sources, design, and interpretation in real studies. The app supports these protocols:
 
 - **Anthropic Messages**
 - **OpenAI Completions**
@@ -17,7 +17,7 @@ to `Anthropic Messages`; explicitly select the protocol exposed by your provider
 
 ## Add a Provider in the UI
 
-1. Start BrainPilot with `brainpilot up`.
+1. Start this repository from source with `npm run bp -- up`.
 2. Open the printed local URL.
 3. Go to **Settings -> Providers**.
 4. Click **Add Provider**.

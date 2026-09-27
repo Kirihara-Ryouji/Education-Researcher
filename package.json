@@ -3,7 +3,11 @@
   "version": "0.2.3",
   "private": true,
   "type": "module",
-  "description": "BrainPilot — multi-agent research collaboration platform (TS + Pi SDK)",
+  "description": "Education Researcher source fork — an education-first research workspace built on BrainPilot",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git"
+  },
   "license": "AGPL-3.0-only",
   "workspaces": [
     "packages/protocol",

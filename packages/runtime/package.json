@@ -6,7 +6,7 @@
   },
   "license": "AGPL-3.0-only",
   "type": "module",
-  "description": "BrainPilot Runtime — Pi SDK orchestration, SessionManager, task ledger, GoT, state authority, HTTP server",
+  "description": "Education Researcher runtime — education-default multi-agent sessions with opt-in neuroscience",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeuroAIHub/BrainPilot.git",
+    "url": "git+https://github.com/Kirihara-Ryouji/Education-Researcher.git",
     "directory": "packages/runtime"
   },
   "publishConfig": {

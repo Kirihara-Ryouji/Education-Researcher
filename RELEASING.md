@@ -1,10 +1,20 @@
-# Releasing BrainPilot
+# Releasing Education Researcher
 
-This checklist covers a release from source selection to user acceptance. Keep the current
-release's exact versions, SHAs, destinations, evidence and rollback steps in one release record.
-Historical checklists are not evidence for a new candidate.
+This fork is currently delivered as source through [Kirihara-Ryouji/Education-Researcher](https://github.com/Kirihara-Ryouji/Education-Researcher). Its education changes have not been published under the upstream `@brainpilot/*` packages, Docker images, or hosted service.
 
-## Prepare and accept the candidate
+## Source delivery checklist
+
+1. Record the candidate commit and review changes to education defaults, source handling, MCP domain access, and research handoff.
+2. Run `npm ci`, `npm run typecheck`, `npm test`, `npm test -w @brainpilot/web`, `npm run docs:check`, and `npm run build`. Record skipped tests and any environment-specific limits.
+3. Review [education evaluation cases](EDUCATION-EVALUATION.md). Real-model answer quality needs a configured provider and manual source review; mock responses are insufficient.
+4. Check both READMEs, the education guide, docs site, security guidance, and source attribution. Ensure examples use de-identified data and do not imply that upstream npm or Cloud already contains the fork.
+5. Publish the reviewed source commit to this repository, verify the remote tree and links, and package the exact tracked source files. Record the archive checksum and the remote commit.
+
+## Upstream BrainPilot publication workflow (reference only)
+
+The sections below describe the inherited npm, image, and Cloud release process. They are not an approved publication plan for this fork. Before using them, establish package ownership, versioning, target registries, support commitments, and a separate review of the candidate.
+
+### Prepare and accept the candidate
 
 1. Freeze the selected changes and merge their reviewed PRs through branch protection.
 2. Record the designated main SHA. Run `npm ci`, `npm run typecheck`, `BP_MOCK=1 npm test`,
@@ -18,7 +28,7 @@ Historical checklists are not evidence for a new candidate.
    notes and all current installation/image examples. Preserve historical version records.
    Check `npm run version:check` after the approved version update.
 
-## Documentation is a release artifact
+### Documentation is a release artifact
 
 Update both languages under `packages/docs/content/docs/`, navigation metadata, explicit
 English routes and the export checks. Update `KnowledgeBase/README.md` when its bundled
@@ -30,7 +40,7 @@ Cloud vendors content at an exact OSS commit and builds its own site shell; reco
 and verify the deployed `/docs` routes. Updating this repository alone does not update the
 hosted documentation.
 
-## Publish approved artifacts
+### Publish approved artifacts
 
 Before version metadata PRs, tags, package/image publication, production changes or community
 announcements, confirm the concrete action and its targets under the current release plan.
@@ -48,7 +58,7 @@ unchanged action; obtain a new decision when the candidate or exposure changes.
 - Never overwrite a published version tag. Inspect remote state after an ambiguous result
   before retrying. Publish the GitHub tag/release with matching notes and source identity.
 
-## Roll out and close
+### Roll out and close
 
 Cloud is a separate release: update it to the published OSS packages, resolve the real lockfile,
 rebuild hosted assets and verify the paired sandbox versions. Use its approved deployment

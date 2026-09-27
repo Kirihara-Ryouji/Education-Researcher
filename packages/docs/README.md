@@ -1,6 +1,6 @@
-# BrainPilot Docs
+# Education Researcher Docs
 
-This workspace builds the public BrainPilot documentation site for `brainpilot.chat/docs`.
+This workspace builds the bilingual documentation for the Education Researcher fork of BrainPilot. The fork's default research domain is education; neuroscience remains an explicit option. These pages describe the fork when built from this repository. References to the published `@brainpilot/app` package, official sandbox images, `brainpilot.chat`, and BrainPilot Cloud describe upstream releases and services, which do not include the fork's education features.
 
 ```bash
 npm run docs:dev

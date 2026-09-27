@@ -276,7 +276,7 @@ export function DesktopShell() {
   if (!isAuthReady) {
     return (
       <div className="app-bootstrapping" role="status" aria-live="polite">
-        <span className="sandbox-status__eyebrow">BrainPilot</span>
+        <span className="sandbox-status__eyebrow">Education Researcher</span>
         <p>{t("shell.bootstrapping")}</p>
       </div>
     );
